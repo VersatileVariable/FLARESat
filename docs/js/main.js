@@ -72,8 +72,8 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, -25, 12);
-    camera.lookAt(0, -25, 0);
+    camera.position.set(0, -15, 15);
+    camera.lookAt(0, -30, 0);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -91,16 +91,8 @@ function initHero3D() {
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
-    const pointLight1 = new THREE.PointLight(0x667eea, 1.5, 100);
-    pointLight1.position.set(-15, 10, 10);
-    scene.add(pointLight1);
-
-    const pointLight2 = new THREE.PointLight(0x764ba2, 1, 100);
-    pointLight2.position.set(15, 10, -10);
-    scene.add(pointLight2);
-
     const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
-    const earthMaterial = new THREE.MeshPhongMaterial({
+            const earthMaterial = new THREE.MeshPhongMaterial({
         color: 0x4a90e2,
         emissive: 0x000000,
         shininess: 60,
@@ -123,7 +115,7 @@ function initHero3D() {
         for (let i = 0; i <= 100; i++) {
             const angle = (i / 100) * Math.PI * 2;
             const x = config.radius * Math.cos(angle);
-            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination) - 10;
+            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination) - 25;
             const z = config.radius * Math.sin(angle) * Math.cos(config.inclination);
             orbitPoints.push(new THREE.Vector3(x, y, z));
         }
@@ -355,11 +347,11 @@ function animateHero() {
         data.angle += data.speed;
         
         const x = data.orbitRadius * Math.cos(data.angle);
-        const y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination) - 10;
+        const y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination) - 25;
         const z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         
         satellite.position.set(x, y, z);
-        satellite.lookAt(0, -10, 0);
+        satellite.lookAt(0, -25, 0);
     });
 
     orbitLines.forEach((orbitData, index) => {
