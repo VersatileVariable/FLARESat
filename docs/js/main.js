@@ -1,8 +1,5 @@
-// ==================== LEO BUSINESS CHALLENGE - MAIN JAVASCRIPT ====================
-
 console.log('LEO Business Challenge - Initialized');
 
-// ==================== SMOOTH SCROLLING ====================
 function scrollToSection(sectionId) {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -13,7 +10,6 @@ function scrollToSection(sectionId) {
     }
 }
 
-// ==================== NAVIGATION ACTIVE STATE ====================
 function updateActiveNavLink() {
     const sections = document.querySelectorAll('.section, .hero');
     const navLinks = document.querySelectorAll('.nav-menu a');
@@ -22,8 +18,6 @@ function updateActiveNavLink() {
     
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
-        
         if (window.pageYOffset >= sectionTop - 100) {
             currentSection = section.getAttribute('id');
         }
@@ -37,7 +31,6 @@ function updateActiveNavLink() {
     });
 }
 
-// ==================== SCROLL ANIMATIONS ====================
 function fadeInOnScroll() {
     const elements = document.querySelectorAll('.challenge-card, .team-card, .solution-text');
     
@@ -61,61 +54,62 @@ function initFadeAnimations() {
     });
 }
 
-// ==================== THREE.JS 3D MODEL ====================
-let scene, camera, renderer, earthHemisphere, satellites = [], orbitLines = [];
+let scene, camera, renderer, earth, satellites = [], orbitLines = [];
+let fires = [];
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
+let autoRotate = true;
 
-function init3DModel() {
-    const container = document.getElementById('canvas-container');
+function initHero3D() {
+    const container = document.querySelector('.hero-background');
     if (!container) return;
 
-    // Scene setup
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1e);
 
-    // Camera setup - positioned for 2D side view
     camera = new THREE.PerspectiveCamera(
         50,
-        container.clientWidth / container.clientHeight,
+        window.innerWidth / window.innerHeight,
         0.1,
         1000
     );
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 0, 18);
+    camera.lookAt(0, -8, 0);
 
-    // Renderer setup
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: true 
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 10);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
-    const pointLight = new THREE.PointLight(0x667eea, 0.8, 100);
-    pointLight.position.set(-10, 5, 10);
-    scene.add(pointLight);
+    const pointLight1 = new THREE.PointLight(0x667eea, 1.5, 100);
+    pointLight1.position.set(-15, 10, 10);
+    scene.add(pointLight1);
 
-    // Create Earth Hemisphere (bottom half visible)
-    const earthGeometry = new THREE.SphereGeometry(4, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
+    const pointLight2 = new THREE.PointLight(0x764ba2, 1, 100);
+    pointLight2.position.set(15, 10, -10);
+    scene.add(pointLight2);
+
+    const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
     const earthMaterial = new THREE.MeshPhongMaterial({
-        color: 0x2b5aa3,
-        emissive: 0x0a1f3f,
-        shininess: 30,
-        flatShading: false
+        color: 0x4a90e2,
+        emissive: 0x1a3a5f,
+        shininess: 40,
     });
-    earthHemisphere = new THREE.Mesh(earthGeometry, earthMaterial);
-    earthHemisphere.rotation.x = -Math.PI / 2;
-    scene.add(earthHemisphere);
+    earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    earth.position.y = -10;
+    scene.add(earth);
 
-    // Add atmosphere glow to hemisphere
-    const atmosphereGeometry = new THREE.SphereGeometry(4.15, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
+    const atmosphereGeometry = new THREE.SphereGeometry(10.4, 64, 64);
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
         color: 0x667eea,
         transparent: true,
@@ -123,206 +117,196 @@ function init3DModel() {
         side: THREE.BackSide
     });
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.rotation.x = -Math.PI / 2;
+    atmosphere.position.y = -10;
     scene.add(atmosphere);
 
-    // Add grid lines on Earth surface for detail
-    createEarthGrid();
+    const outerGlowGeometry = new THREE.SphereGeometry(11, 64, 64);
+    const outerGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x667eea,
+        transparent: true,
+        opacity: 0.1,
+        side: THREE.BackSide
+    });
+    const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+    outerGlow.position.y = -10;
+    scene.add(outerGlow);
 
-    // Create multiple orbit routes at different altitudes
-    const orbits = [
-        { radius: 5.5, color: 0xff6b6b, speed: 0.0008, tilt: 0 },
-        { radius: 6.5, color: 0x4ecdc4, speed: 0.0006, tilt: Math.PI / 6 },
-        { radius: 7.5, color: 0xffe66d, speed: 0.0005, tilt: -Math.PI / 8 },
-        { radius: 8.5, color: 0x95e1d3, speed: 0.0004, tilt: Math.PI / 4 }
+    createEarthDetails();
+
+    const orbitConfigs = [
+        { radius: 12, color: 0xff6b6b, speed: 0.0008, inclination: 0, satellites: 2 },
+        { radius: 14, color: 0x4ecdc4, speed: 0.0006, inclination: Math.PI / 6, satellites: 3 },
+        { radius: 16, color: 0xffe66d, speed: 0.0005, inclination: -Math.PI / 8, satellites: 2 },
+        { radius: 18, color: 0x95e1d3, speed: 0.0004, inclination: Math.PI / 4, satellites: 2 }
     ];
 
-    orbits.forEach((orbit, index) => {
-        // Create orbit line (ellipse for 2D appearance)
-        const orbitCurve = new THREE.EllipseCurve(
-            0, 0,
-            orbit.radius, orbit.radius,
-            0, 2 * Math.PI,
-            false,
-            0
-        );
-        
-        const orbitPoints = orbitCurve.getPoints(100);
-        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const orbitMaterial = new THREE.LineBasicMaterial({ 
-            color: orbit.color,
-            transparent: true,
-            opacity: 0.4,
-            linewidth: 2
-        });
-        
-        const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
-        orbitLine.rotation.x = orbit.tilt;
-        scene.add(orbitLine);
-        orbitLines.push(orbitLine);
+    orbitConfigs.forEach((config, orbitIndex) => {
+        const orbitPoints = [];
+        for (let i = 0; i <= 100; i++) {
+            const angle = (i / 100) * Math.PI * 2;
+            const x = config.radius * Math.cos(angle);
+            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination) - 10;
+            const z = config.radius * Math.sin(angle) * Math.cos(config.inclination);
+            orbitPoints.push(new THREE.Vector3(x, y, z));
+        }
 
-        // Create satellite on this orbit
-        const satellite = createSatellite(orbit.color);
-        satellite.userData = {
-            orbitRadius: orbit.radius,
-            speed: orbit.speed,
-            angle: (index * Math.PI * 2) / orbits.length,
-            tilt: orbit.tilt
-        };
-        scene.add(satellite);
-        satellites.push(satellite);
+        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const orbitMaterial = new THREE.LineBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.4
+        });
+
+        const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+        scene.add(orbitLine);
+        orbitLines.push({ line: orbitLine, baseOpacity: 0.4 });
+
+        for (let i = 0; i < config.satellites; i++) {
+            const satellite = createSatellite(config.color, 0.6);
+            satellite.userData = {
+                orbitRadius: config.radius,
+                speed: config.speed,
+                angle: (i * Math.PI * 2) / config.satellites + (orbitIndex * 0.5),
+                inclination: config.inclination
+            };
+            scene.add(satellite);
+            satellites.push(satellite);
+        }
     });
 
-    // Add dashed arc lines above Earth to show satellite paths
-    createPathArcs();
-
-    // Stars background
+    createFires();
     createStars();
+    setupHeroMouseControls();
 
-    // Add clouds floating above Earth
-    createClouds();
+    window.addEventListener('resize', onHeroResize);
 
-    // Mouse controls
-    setupMouseControls(container);
+    animateHero();
 
-    // Reset button
-    document.getElementById('reset-view').addEventListener('click', resetCamera);
-
-    // Handle window resize
-    window.addEventListener('resize', onWindowResize);
-
-    // Start animation
-    animate();
+    setInterval(() => {
+        spawnRandomFire();
+    }, 3000);
 }
 
-function createEarthGrid() {
-    // Create latitude lines
-    for (let lat = 0; lat < Math.PI / 2; lat += Math.PI / 12) {
-        const radius = 4 * Math.cos(lat);
-        const yPos = 4 * Math.sin(lat);
+function createEarthDetails() {
+    for (let lat = -Math.PI / 2; lat <= Math.PI / 2; lat += Math.PI / 12) {
+        const radius = 10 * Math.cos(lat);
+        const yPos = 10 * Math.sin(lat);
         
         const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
-        const points = curve.getPoints(50);
+        const points = curve.getPoints(64);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({ 
-            color: 0x1a4d8f, 
+            color: 0x2a5f8f, 
             transparent: true, 
             opacity: 0.3 
         });
         const line = new THREE.Line(geometry, material);
         line.position.y = yPos;
-        earthHemisphere.add(line);
+        earth.add(line);
     }
 
-    // Create longitude lines
-    for (let lon = 0; lon < Math.PI * 2; lon += Math.PI / 8) {
+    for (let lon = 0; lon < Math.PI * 2; lon += Math.PI / 12) {
         const points = [];
-        for (let lat = 0; lat <= Math.PI / 2; lat += Math.PI / 24) {
-            const x = 4 * Math.sin(lat) * Math.cos(lon);
-            const z = 4 * Math.sin(lat) * Math.sin(lon);
-            const y = 4 * Math.cos(lat);
+        for (let lat = -Math.PI / 2; lat <= Math.PI / 2; lat += Math.PI / 32) {
+            const x = 10 * Math.cos(lat) * Math.cos(lon);
+            const z = 10 * Math.cos(lat) * Math.sin(lon);
+            const y = 10 * Math.sin(lat);
             points.push(new THREE.Vector3(x, y, z));
         }
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({ 
-            color: 0x1a4d8f, 
+            color: 0x2a5f8f, 
             transparent: true, 
             opacity: 0.3 
         });
         const line = new THREE.Line(geometry, material);
-        earthHemisphere.add(line);
+        earth.add(line);
     }
 }
 
-function createSatellite(color) {
+function createFires() {
+    for (let i = 0; i < 8; i++) {
+        spawnRandomFire();
+    }
+}
+
+function spawnRandomFire() {
+    if (fires.length > 15) {
+        const oldFire = fires.shift();
+        earth.remove(oldFire.marker);
+        earth.remove(oldFire.glow);
+    }
+
+    const fireGeometry = new THREE.CircleGeometry(0.15, 8);
+    const fireMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xff4444,
+        transparent: true,
+        opacity: 0.95
+    });
+    const fireMarker = new THREE.Mesh(fireGeometry, fireMaterial);
+    
+    const glowGeometry = new THREE.CircleGeometry(0.28, 8);
+    const glowMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xff6b6b,
+        transparent: true,
+        opacity: 0.5
+    });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    
+    const lat = (Math.random() - 0.5) * Math.PI;
+    const lon = Math.random() * Math.PI * 2;
+    const radius = 10.08;
+    
+    const x = radius * Math.cos(lat) * Math.cos(lon);
+    const z = radius * Math.cos(lat) * Math.sin(lon);
+    const y = radius * Math.sin(lat);
+    
+    fireMarker.position.set(x, y, z);
+    glow.position.set(x, y, z);
+    
+    fireMarker.lookAt(0, 0, 0);
+    glow.lookAt(0, 0, 0);
+    fireMarker.rotateX(Math.PI);
+    glow.rotateX(Math.PI);
+    
+    earth.add(fireMarker);
+    earth.add(glow);
+    
+    fires.push({ 
+        marker: fireMarker, 
+        glow: glow,
+        life: 0,
+        maxLife: 10000 + Math.random() * 5000
+    });
+}
+
+function createSatellite(color, scale) {
     const satelliteGroup = new THREE.Group();
     
-    // Satellite body (smaller for scale)
-    const bodyGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.15);
+    const bodyGeometry = new THREE.BoxGeometry(0.4 * scale, 0.2 * scale, 0.2 * scale);
     const bodyMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xcccccc,
+        color: 0xdddddd,
         emissive: color,
-        emissiveIntensity: 0.2
+        emissiveIntensity: 0.3
     });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     satelliteGroup.add(body);
 
-    // Solar panels
-    const panelGeometry = new THREE.BoxGeometry(0.6, 0.02, 0.3);
+    const panelGeometry = new THREE.BoxGeometry(0.8 * scale, 0.03 * scale, 0.4 * scale);
     const panelMaterial = new THREE.MeshPhongMaterial({ 
         color: 0x1a4d8f,
-        emissive: 0x0a1f3f
+        shininess: 30
     });
     
     const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-    leftPanel.position.x = -0.45;
+    leftPanel.position.x = -0.6 * scale;
     satelliteGroup.add(leftPanel);
     
     const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-    rightPanel.position.x = 0.45;
+    rightPanel.position.x = 0.6 * scale;
     satelliteGroup.add(rightPanel);
 
-    // Add a small glow sphere
-    const glowGeometry = new THREE.SphereGeometry(0.15, 16, 16);
-    const glowMaterial = new THREE.MeshBasicMaterial({ 
-        color: color,
-        transparent: true,
-        opacity: 0.6
-    });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-    satelliteGroup.add(glow);
-
     return satelliteGroup;
-}
-
-function createPathArcs() {
-    // Dashed arcs showing satellite paths
-    for (let i = 0; i < 6; i++) {
-        const angle = (i * Math.PI) / 6;
-        const points = [];
-        const radius = 6 + i * 0.5;
-        
-        for (let a = -Math.PI / 3; a <= Math.PI / 3; a += 0.1) {
-            const x = radius * Math.cos(a) * Math.cos(angle);
-            const y = radius * Math.sin(a);
-            const z = radius * Math.cos(a) * Math.sin(angle);
-            points.push(new THREE.Vector3(x, y, z));
-        }
-        
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineDashedMaterial({ 
-            color: 0x667eea,
-            dashSize: 0.2,
-            gapSize: 0.1,
-            transparent: true,
-            opacity: 0.2
-        });
-        const line = new THREE.Line(geometry, material);
-        line.computeLineDistances();
-        scene.add(line);
-    }
-}
-
-function createClouds() {
-    for (let i = 0; i < 20; i++) {
-        const cloudGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-        const cloudMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.4
-        });
-        const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-        
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 4.3;
-        const height = Math.random() * 2;
-        
-        cloud.position.x = radius * Math.cos(angle);
-        cloud.position.y = height;
-        cloud.position.z = radius * Math.sin(angle);
-        
-        scene.add(cloud);
-    }
 }
 
 function createStars() {
@@ -335,10 +319,10 @@ function createStars() {
     });
 
     const starsVertices = [];
-    for (let i = 0; i < 2000; i++) {
-        const x = (Math.random() - 0.5) * 100;
-        const y = (Math.random() - 0.5) * 100;
-        const z = (Math.random() - 0.5) * 50 - 25;
+    for (let i = 0; i < 4000; i++) {
+        const x = (Math.random() - 0.5) * 300;
+        const y = (Math.random() - 0.5) * 300;
+        const z = (Math.random() - 0.5) * 300;
         starsVertices.push(x, y, z);
     }
 
@@ -351,105 +335,105 @@ function createStars() {
     scene.add(stars);
 }
 
-function setupMouseControls(container) {
-    container.addEventListener('mousedown', (e) => {
+function setupHeroMouseControls() {
+    const canvas = renderer.domElement;
+    
+    canvas.addEventListener('mousedown', (e) => {
         isDragging = true;
+        autoRotate = false;
         previousMousePosition = { x: e.clientX, y: e.clientY };
     });
 
-    container.addEventListener('mousemove', (e) => {
+    canvas.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
 
         const deltaX = e.clientX - previousMousePosition.x;
-        const deltaY = e.clientY - previousMousePosition.y;
-
-        // Rotate entire scene slightly for better view
-        scene.rotation.y += deltaX * 0.003;
-        scene.rotation.x += deltaY * 0.003;
-        
-        // Limit rotation
-        scene.rotation.x = Math.max(-0.3, Math.min(0.3, scene.rotation.x));
+        earth.rotation.y += deltaX * 0.005;
 
         previousMousePosition = { x: e.clientX, y: e.clientY };
     });
 
-    container.addEventListener('mouseup', () => {
+    canvas.addEventListener('mouseup', () => {
         isDragging = false;
+        setTimeout(() => { autoRotate = true; }, 2000);
     });
 
-    container.addEventListener('mouseleave', () => {
+    canvas.addEventListener('mouseleave', () => {
         isDragging = false;
-    });
-
-    container.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        camera.position.z += e.deltaY * 0.02;
-        camera.position.z = Math.max(12, Math.min(30, camera.position.z));
     });
 }
 
-function resetCamera() {
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
-    scene.rotation.set(0, 0, 0);
-}
+function animateHero() {
+    requestAnimationFrame(animateHero);
 
-function animate() {
-    requestAnimationFrame(animate);
+    const time = Date.now();
 
-    // Slowly rotate Earth hemisphere
-    earthHemisphere.rotation.z += 0.0005;
+    if (autoRotate) {
+        earth.rotation.y += 0.0005;
+    }
 
-    // Animate satellites along their orbits
     satellites.forEach(satellite => {
         const data = satellite.userData;
         data.angle += data.speed;
         
-        satellite.position.x = data.orbitRadius * Math.cos(data.angle);
-        satellite.position.z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.tilt);
-        satellite.position.y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.tilt);
+        const x = data.orbitRadius * Math.cos(data.angle);
+        const y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination) - 10;
+        const z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         
-        // Rotate satellite to face direction of travel
-        satellite.rotation.y = -data.angle;
+        satellite.position.set(x, y, z);
+        satellite.lookAt(0, -10, 0);
     });
 
-    // Gently pulse orbit lines
-    const pulseScale = 1 + Math.sin(Date.now() * 0.001) * 0.02;
-    orbitLines.forEach(line => {
-        line.scale.set(pulseScale, pulseScale, 1);
+    orbitLines.forEach((orbitData, index) => {
+        const pulse = Math.sin(time * 0.001 + index) * 0.2 + 0.8;
+        orbitData.line.material.opacity = orbitData.baseOpacity * pulse;
+    });
+
+    fires.forEach((fire, index) => {
+        fire.life += 16;
+        
+        const pulse = Math.sin(time * 0.003 + index) * 0.3 + 0.7;
+        fire.marker.material.opacity = 0.95 * pulse;
+        fire.glow.material.opacity = 0.5 * pulse;
+        
+        if (fire.life > fire.maxLife) {
+            const fadeProgress = (fire.life - fire.maxLife) / 1000;
+            fire.marker.material.opacity *= Math.max(0, 1 - fadeProgress);
+            fire.glow.material.opacity *= Math.max(0, 1 - fadeProgress);
+        }
+    });
+
+    fires = fires.filter(fire => {
+        if (fire.life > fire.maxLife + 1000) {
+            earth.remove(fire.marker);
+            earth.remove(fire.glow);
+            return false;
+        }
+        return true;
     });
 
     renderer.render(scene, camera);
 }
 
-function onWindowResize() {
-    const container = document.getElementById('canvas-container');
-    if (!container) return;
-
-    camera.aspect = container.clientWidth / container.clientHeight;
+function onHeroResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// ==================== EVENT LISTENERS ====================
 window.addEventListener('scroll', () => {
     updateActiveNavLink();
     fadeInOnScroll();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Content Loaded');
     initFadeAnimations();
     fadeInOnScroll();
     
-    // Initialize 3D model
     if (typeof THREE !== 'undefined') {
-        init3DModel();
-    } else {
-        console.error('THREE.js not loaded');
+        initHero3D();
     }
     
-    // Add click handlers to nav links
     const navLinks = document.querySelectorAll('.nav-menu a');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -459,11 +443,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-
-// Export functions
-window.LEOBusiness = {
-    scrollToSection,
-    updateActiveNavLink
-};
-
-console.log('All systems ready for LEO Business Challenge');
