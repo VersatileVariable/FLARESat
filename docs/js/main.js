@@ -232,11 +232,13 @@ function initHero3D() {
             const satellite = createSatellite(colors[plane], 0.1);
             
             // Calculate initial angle with Walker Delta constellation phasing
-            // Walker Delta phasing formula: satellites in adjacent planes offset by (f × 360°) / t
-            // This ensures satellites in plane N are shifted relative to plane N-1
-            // Creating a "staggered" pattern that prevents collisions at plane intersections
-            const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / numPlanes;
-            const initialAngle = (sat * 2 * Math.PI) / satellitesPerPlane + phaseOffset;
+            // Proper Walker Delta formula for collision avoidance:
+            // Base angle: evenly space satellites within the plane
+            // Phase offset: shift each plane by (f × plane) / satellitesPerPlane revolutions
+            // This creates interleaved pattern where satellites spiral around Earth
+            const baseAngle = (sat * 2 * Math.PI) / satellitesPerPlane; // 0°, 14.4°, 28.8°, etc.
+            const phaseOffset = (phasingFactor * plane * 2 * Math.PI) / satellitesPerPlane; // Offset per plane
+            const initialAngle = baseAngle + phaseOffset;
             
             satellite.userData = {
                 orbitRadius: orbitRadius,
