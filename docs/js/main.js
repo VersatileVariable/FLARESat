@@ -62,6 +62,8 @@ let previousMousePosition = { x: 0, y: 0 };
 let autoRotate = true;
 let confirmatingSatellites = [];
 let weatherClouds = [];
+let earthTextureData = null; // Store texture pixel data for land detection
+let earthTextureLoaded = false;
 
 function initHero3D() {
     const container = document.querySelector('.hero-background');
@@ -96,17 +98,69 @@ function initHero3D() {
     scene.add(directionalLight);
 
     // ========== EARTH SPHERE ==========
-    // Main Earth sphere with blue ocean color
+    // Main Earth sphere with realistic texture map showing continents and oceans
     const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
+    
+    // Create Earth material first with a temporary blue color
     const earthMaterial = new THREE.MeshPhongMaterial({
-        color: 0x4a90e2,        // Ocean blue color
-        emissive: 0x000000,     // No self-illumination
-        shininess: 60,          // Glossy surface for water reflection
+        color: 0x4a90e2,            // Blue ocean color as default
+        shininess: 60,              // Glossy surface for water reflection
+        specular: 0x333333,         // Specular highlights on oceans
     });
+    
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
     earth.position.y = -30;
     earth.rotation.z = Math.PI / 2; // Rotate 90 degrees so poles are on X axis
     scene.add(earth);
+    
+    // Load Earth texture from Wikimedia Commons
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous'); // Enable CORS
+    
+    textureLoader.load(
+        'https://upload.wikimedia.org/wikipedia/commons/0/04/Solarsystemscope_texture_8k_earth_daymap.jpg',
+        // Success callback - apply texture and extract pixel data for land detection
+        (texture) => {
+            console.log('Earth texture loaded successfully!');
+            console.log('Texture dimensions:', texture.image.width, 'x', texture.image.height);
+            
+            // Apply the texture to the material
+            earthMaterial.map = texture;
+            earthMaterial.color.setHex(0xffffff); // Reset to white to show true texture colors
+            earthMaterial.needsUpdate = true;
+            
+            console.log('Texture applied to Earth material');
+            
+            // Create canvas to read pixel data for land detection
+            try {
+                const canvas = document.createElement('canvas');
+                const img = texture.image;
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                earthTextureData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                earthTextureLoaded = true;
+                console.log('Earth texture data extracted for land detection');
+            } catch (e) {
+                console.warn('Could not extract pixel data (CORS):', e);
+                earthTextureLoaded = false;
+            }
+        },
+        // Progress callback
+        (xhr) => {
+            if (xhr.lengthComputable) {
+                const percentComplete = xhr.loaded / xhr.total * 100;
+                console.log('Loading texture:', percentComplete.toFixed(2) + '% loaded');
+            }
+        },
+        // Error callback
+        (error) => {
+            console.error('Error loading Earth texture:', error);
+            console.log('Keeping blue fallback color for Earth');
+            earthTextureLoaded = false;
+        }
+    );
 
     // ========== DARK AURA - ATMOSPHERIC GLOW ==========
     // This creates the dark blue/purple halo effect around Earth that simulates the atmosphere
@@ -273,10 +327,10 @@ function initHero3D() {
 
     animateHero();
 
-    // Spawn new fires every 2 seconds for continuous action
+    // Spawn new fires every 1 second for continuous action
     setInterval(() => {
         spawnRandomFire();
-    }, 2000);
+    }, 1000);
     
     // Spawn new weather clouds every 5 seconds (more frequent)
     setInterval(() => {
@@ -393,9 +447,12 @@ function createEquator() {
 
 function createFires() {
     // Spawn more initial fires for better visual impact
-    for (let i = 0; i < 15; i++) {
-        spawnRandomFire();
-    }
+    // Add delay to ensure texture is loaded first
+    setTimeout(() => {
+        for (let i = 0; i < 30; i++) {
+            spawnRandomFire();
+        }
+    }, 1000);
 }
 
 function createWeatherClouds() {
@@ -481,9 +538,91 @@ function spawnWeatherCloud() {
     weatherClouds.push(cloudData);
 }
 
+// Helper function to check if a lat/lon coordinate is on land
+function isOnLand(lat, lon) {
+    if (!earthTextureLoaded || !earthTextureData) {
+        return true; // If texture not loaded, allow fires anywhere
+    }
+    
+    // Convert lat/lon to texture UV coordinates
+    // Longitude: -180° to 180° maps to 0 to 1 (U)
+    // Latitude: 90° to -90° maps to 0 to 1 (V)
+    const u = (lon / (Math.PI * 2) + 0.5) % 1.0;
+    const v = 0.5 - (lat / Math.PI);
+    
+    // Get pixel coordinates
+    const x = Math.floor(u * earthTextureData.width);
+    const y = Math.floor(v * earthTextureData.height);
+    
+    // Helper function to check if a pixel is water (more aggressive detection)
+    const isWaterAtPixel = (px, py) => {
+        // Boundary check
+        if (px < 0 || px >= earthTextureData.width || py < 0 || py >= earthTextureData.height) {
+            return true; // Treat boundary as water to be safe
+        }
+        
+        const idx = (py * earthTextureData.width + px) * 4;
+        const pr = earthTextureData.data[idx];
+        const pg = earthTextureData.data[idx + 1];
+        const pb = earthTextureData.data[idx + 2];
+        
+        // Check for exact ocean color #1e3b75 (RGB: 30, 59, 117)
+        const isExactOcean = (pr === 30 && pg === 59 && pb === 117);
+        
+        // More aggressive water detection:
+        // 1. Blue is dominant (original check)
+        const blueDominant = pb > (pr + pg) * 0.7;
+        
+        // 2. Blue channel is significantly higher than both red and green individually
+        const blueHigherThanBoth = pb > pr + 20 && pb > pg + 20;
+        
+        // 3. Overall color is dark/blue-ish (likely water)
+        const isDarkBlue = pb > 100 && pb > pr && pb > pg;
+        
+        // 4. Low saturation blues (also water)
+        const isLowSaturationBlue = pb > 60 && pr < 80 && pg < 100;
+        
+        return isExactOcean || blueDominant || blueHigherThanBoth || isDarkBlue || isLowSaturationBlue;
+    };
+    
+    // Get pixel color (RGBA) at center point
+    const index = (y * earthTextureData.width + x) * 4;
+    const r = earthTextureData.data[index];
+    const g = earthTextureData.data[index + 1];
+    const b = earthTextureData.data[index + 2];
+    
+    // Check for exact ocean color #1e3b75 (RGB: 30, 59, 117) - no tolerance
+    const isOceanColor = (r === 30 && g === 59 && b === 117);
+    
+    // More aggressive water detection at center point
+    const blueDominant = b > (r + g) * 0.7;
+    const blueHigherThanBoth = b > r + 20 && b > g + 20;
+    const isDarkBlue = b > 100 && b > r && b > g;
+    const isLowSaturationBlue = b > 60 && r < 80 && g < 100;
+    
+    // If center point is water, reject immediately
+    if (isOceanColor || blueDominant || blueHigherThanBoth || isDarkBlue || isLowSaturationBlue) {
+        return false;
+    }
+    
+    // Check buffer zone: sample pixels in a larger grid around the point
+    // This ensures fires don't spawn too close to coastlines
+    const bufferSize = 6; // Increased from 3 to 6 pixels for more safety
+    for (let dy = -bufferSize; dy <= bufferSize; dy++) {
+        for (let dx = -bufferSize; dx <= bufferSize; dx++) {
+            if (isWaterAtPixel(x + dx, y + dy)) {
+                return false; // Too close to water
+            }
+        }
+    }
+    
+    // Passed all checks - it's land and far enough from ocean
+    return true;
+}
+
 function spawnRandomFire() {
-    // Allow up to 25 fires at once for more dramatic effect
-    if (fires.length > 25) {
+    // Allow up to 40 fires at once for more dramatic effect
+    if (fires.length > 40) {
         const oldFire = fires.shift();
         earth.remove(oldFire.marker);
         earth.remove(oldFire.glow);
@@ -511,8 +650,28 @@ function spawnRandomFire() {
     
     // Restrict fires to ±56° latitude (matching 56° Walker Delta constellation coverage)
     const maxLatitude = 56 * (Math.PI / 180); // 56 degrees in radians (matches inclination)
-    const lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
-    const lon = Math.random() * Math.PI * 2;
+    
+    // Try up to 50 times to find a land location
+    let lat, lon;
+    let attempts = 0;
+    let foundLand = false;
+    
+    while (attempts < 50 && !foundLand) {
+        lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
+        lon = Math.random() * Math.PI * 2;
+        
+        if (isOnLand(lat, lon)) {
+            foundLand = true;
+        }
+        attempts++;
+    }
+    
+    // If we couldn't find land after 50 attempts, use the last random position anyway
+    // (this prevents infinite loops if texture isn't loaded)
+    if (!foundLand) {
+        console.log('Could not find land location, placing fire anyway');
+    }
+    
     const radius = 10.08;
     
     const x = radius * Math.cos(lat) * Math.cos(lon);
