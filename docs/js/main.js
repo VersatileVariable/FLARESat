@@ -195,10 +195,10 @@ function initHero3D() {
     createEarthDetails();
     createEquator();
 
-    // ========== WALKER DELTA CONSTELLATION: 56°:500/20/1 ==========
+    // ========== WALKER DELTA CONSTELLATION: 56°:1000/20/1 ==========
     // Based on Walker Delta pattern notation i:t/p/f (similar to Galileo navigation system):
     // i = 56° inclination (tilt of orbital plane relative to Earth's equator)
-    // t = 500 total satellites
+    // t = 1000 total satellites
     // p = 20 orbital planes  
     // f = 1 phasing factor (relative shift of satellites in adjacent planes)
     //
@@ -210,7 +210,7 @@ function initHero3D() {
     // • Each plane rotated around Earth's Z-axis by angle of 2π/p (360°/20 = 18°)
     //
     // Key Features:
-    // • 500 Satellites Total - 25 satellites evenly distributed in each of the 20 orbital planes
+    // • 1000 Satellites Total - 50 satellites evenly distributed in each of the 20 orbital planes
     // • 20 Orbital Planes - Each plane separated by 18° RAAN (Right Ascension of Ascending Node)
     // • 56° Inclination - Common angle for LEO constellations, provides good global coverage
     //   while avoiding polar regions (similar to Galileo's 56°:24/3/1 configuration)
@@ -232,9 +232,9 @@ function initHero3D() {
     // ✓ Optimal for global fire detection with rapid revisit times
     // ✓ Highly scalable design following established satellite navigation patterns
     
-    const totalSatellites = 500;
+    const totalSatellites = 1000;
     const numPlanes = 20;
-    const satellitesPerPlane = totalSatellites / numPlanes; // 25 satellites per plane
+    const satellitesPerPlane = totalSatellites / numPlanes; // 50 satellites per plane
     const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
     const orbitRadius = 14; // ~500-550 km altitude
     const orbitSpeed = 0.0003; // Slower orbital speed (was 0.0006)
@@ -554,7 +554,7 @@ function isOnLand(lat, lon) {
     const x = Math.floor(u * earthTextureData.width);
     const y = Math.floor(v * earthTextureData.height);
     
-    // Helper function to check if a pixel is water (more aggressive detection)
+    // Helper function to check if a pixel is water (REJECT HIGH BLUE VALUES)
     const isWaterAtPixel = (px, py) => {
         // Boundary check
         if (px < 0 || px >= earthTextureData.width || py < 0 || py >= earthTextureData.height) {
@@ -566,23 +566,18 @@ function isOnLand(lat, lon) {
         const pg = earthTextureData.data[idx + 1];
         const pb = earthTextureData.data[idx + 2];
         
-        // Check for exact ocean color #1e3b75 (RGB: 30, 59, 117)
-        const isExactOcean = (pr === 30 && pg === 59 && pb === 117);
+        // Reject if blue value is above 80 - this eliminates all ocean areas
+        if (pb > 80) {
+            return true;
+        }
         
-        // More aggressive water detection:
-        // 1. Blue is dominant (original check)
-        const blueDominant = pb > (pr + pg) * 0.7;
+        // Reject if blue is the dominant color
+        if (pb >= pr || pb >= pg) {
+            return true;
+        }
         
-        // 2. Blue channel is significantly higher than both red and green individually
-        const blueHigherThanBoth = pb > pr + 20 && pb > pg + 20;
-        
-        // 3. Overall color is dark/blue-ish (likely water)
-        const isDarkBlue = pb > 100 && pb > pr && pb > pg;
-        
-        // 4. Low saturation blues (also water)
-        const isLowSaturationBlue = pb > 60 && pr < 80 && pg < 100;
-        
-        return isExactOcean || blueDominant || blueHigherThanBoth || isDarkBlue || isLowSaturationBlue;
+        // It's land only if blue is low AND weakest
+        return false;
     };
     
     // Get pixel color (RGBA) at center point
@@ -591,17 +586,13 @@ function isOnLand(lat, lon) {
     const g = earthTextureData.data[index + 1];
     const b = earthTextureData.data[index + 2];
     
-    // Check for exact ocean color #1e3b75 (RGB: 30, 59, 117) - no tolerance
-    const isOceanColor = (r === 30 && g === 59 && b === 117);
+    // Reject if blue value is above 80 - eliminates all ocean areas
+    if (b > 80) {
+        return false;
+    }
     
-    // More aggressive water detection at center point
-    const blueDominant = b > (r + g) * 0.7;
-    const blueHigherThanBoth = b > r + 20 && b > g + 20;
-    const isDarkBlue = b > 100 && b > r && b > g;
-    const isLowSaturationBlue = b > 60 && r < 80 && g < 100;
-    
-    // If center point is water, reject immediately
-    if (isOceanColor || blueDominant || blueHigherThanBoth || isDarkBlue || isLowSaturationBlue) {
+    // Reject if blue is the dominant color
+    if (b >= r || b >= g) {
         return false;
     }
     
@@ -651,12 +642,12 @@ function spawnRandomFire() {
     // Restrict fires to ±56° latitude (matching 56° Walker Delta constellation coverage)
     const maxLatitude = 56 * (Math.PI / 180); // 56 degrees in radians (matches inclination)
     
-    // Try up to 50 times to find a land location
+    // Try up to 200 times to find a land location (increased from 50)
     let lat, lon;
     let attempts = 0;
     let foundLand = false;
     
-    while (attempts < 50 && !foundLand) {
+    while (attempts < 200 && !foundLand) {
         lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
         lon = Math.random() * Math.PI * 2;
         
@@ -666,10 +657,11 @@ function spawnRandomFire() {
         attempts++;
     }
     
-    // If we couldn't find land after 50 attempts, use the last random position anyway
-    // (this prevents infinite loops if texture isn't loaded)
+    // If we couldn't find land after 200 attempts, skip this fire spawn
+    // This prevents ocean fires from appearing
     if (!foundLand) {
-        console.log('Could not find land location, placing fire anyway');
+        console.log('Could not find land location after 200 attempts, skipping fire spawn');
+        return; // Exit without spawning fire
     }
     
     const radius = 10.08;
