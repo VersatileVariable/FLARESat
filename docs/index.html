@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NASA Space Apps Challenge 2025 - Commercializing Low Earth Orbit">
+    <title>LEO Business Challenge | NASA Space Apps 2025</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">LEO Business</div>
+            <ul class="nav-menu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#challenge">Challenge</a></li>
+                <li><a href="#model">3D Model</a></li>
+                <li><a href="#solution">Solution</a></li>
+                <li><a href="#team">Team</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Commercializing Low Earth Orbit</h1>
+            <p class="hero-subtitle">NASA Space Apps Challenge 2025</p>
+            <p class="hero-description">
+                Exploring sustainable business models for the future of space commerce
+            </p>
+            <button class="cta-button" onclick="scrollToSection('model')">
+                View 3D Model
+            </button>
+        </div>
+        <div class="hero-background"></div>
+    </section>
+
+    <!-- Challenge Section -->
+    <section id="challenge" class="section">
+        <div class="container">
+            <h2 class="section-title">The Challenge</h2>
+            <div class="challenge-grid">
+                <div class="challenge-card">
+                    <div class="card-icon">Launch</div>
+                    <h3>Rapid Commercialization</h3>
+                    <p>Space business is accelerating with unprecedented opportunities in LEO</p>
+                </div>
+                <div class="challenge-card">
+                    <div class="card-icon">Regulate</div>
+                    <h3>Regulatory Complexity</h3>
+                    <p>Navigating international space law and emerging regulations</p>
+                </div>
+                <div class="challenge-card">
+                    <div class="card-icon">Sustain</div>
+                    <h3>Environmental Impact</h3>
+                    <p>Addressing space debris and sustainable orbital operations</p>
+                </div>
+                <div class="challenge-card">
+                    <div class="card-icon">Innovate</div>
+                    <h3>Innovation Required</h3>
+                    <p>Creating scalable, sustainable business models for space</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3D Model Section -->
+    <section id="model" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Interactive LEO Satellite Model</h2>
+            <div class="model-container">
+                <div id="canvas-container"></div>
+                <div class="model-controls">
+                    <p class="control-hint">Click and drag to rotate | Scroll to zoom</p>
+                    <button id="reset-view" class="control-button">Reset View</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section id="solution" class="section">
+        <div class="container">
+            <h2 class="section-title">Our Solution</h2>
+            <div class="solution-content">
+                <div class="solution-text">
+                    <h3>Sustainable LEO Business Model</h3>
+                    <p>
+                        We propose a comprehensive business model that addresses the unique 
+                        challenges of operating in Low Earth Orbit while maximizing the 
+                        economic potential of space commercialization.
+                    </p>
+                    <ul class="solution-features">
+                        <li>Scalable infrastructure design</li>
+                        <li>Environmental sustainability focus</li>
+                        <li>Regulatory compliance framework</li>
+                        <li>Multi-revenue stream approach</li>
+                    </ul>
+                </div>
+                <div class="solution-visual">
+                    <div class="placeholder-box">
+                        <p>Business Model Visualization</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Our Team</h2>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-avatar">Member</div>
+                    <h3>Team Member 1</h3>
+                    <p class="team-role">Role</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">Member</div>
+                    <h3>Team Member 2</h3>
+                    <p class="team-role">Role</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">Member</div>
+                    <h3>Team Member 3</h3>
+                    <p class="team-role">Role</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">Member</div>
+                    <h3>Team Member 4</h3>
+                    <p class="team-role">Role</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 NASA Space Apps Challenge - LEO Business Team</p>
+            <p>Built for the future of space commerce</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
