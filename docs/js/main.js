@@ -271,9 +271,10 @@ function initHero3D() {
 
     animateHero();
 
+    // Spawn new fires every 2 seconds for continuous action
     setInterval(() => {
         spawnRandomFire();
-    }, 3000);
+    }, 2000);
 }
 
 function createEarthDetails() {
@@ -384,16 +385,22 @@ function createEquator() {
 }
 
 function createFires() {
-    for (let i = 0; i < 8; i++) {
+    // Spawn more initial fires for better visual impact
+    for (let i = 0; i < 15; i++) {
         spawnRandomFire();
     }
 }
 
 function spawnRandomFire() {
-    if (fires.length > 15) {
+    // Allow up to 25 fires at once for more dramatic effect
+    if (fires.length > 25) {
         const oldFire = fires.shift();
         earth.remove(oldFire.marker);
         earth.remove(oldFire.glow);
+        // Remove smoke clouds
+        if (oldFire.smokeClouds) {
+            oldFire.smokeClouds.forEach(cloud => earth.remove(cloud));
+        }
     }
 
     const fireGeometry = new THREE.CircleGeometry(0.15, 8);
@@ -433,12 +440,47 @@ function spawnRandomFire() {
     earth.add(fireMarker);
     earth.add(glow);
     
+    // Create smoke clouds that rise from the fire
+    const smokeClouds = [];
+    const numSmokeClouds = 5;
+    
+    for (let i = 0; i < numSmokeClouds; i++) {
+        const smokeGeometry = new THREE.SphereGeometry(0.2 + i * 0.08, 8, 8);
+        const smokeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x666666,
+            transparent: true,
+            opacity: 0.3 - i * 0.04,
+            depthTest: true,  // Ensure smoke doesn't obstruct orbit lines
+            depthWrite: false // Allow transparency to work correctly
+        });
+        const smokeCloud = new THREE.Mesh(smokeGeometry, smokeMaterial);
+        
+        // Position smoke slightly above fire
+        const smokeRadius = radius + 0.15 + i * 0.1;
+        const smokeX = smokeRadius * Math.cos(lat) * Math.cos(lon);
+        const smokeZ = smokeRadius * Math.cos(lat) * Math.sin(lon);
+        const smokeY = smokeRadius * Math.sin(lat);
+        
+        smokeCloud.position.set(smokeX, smokeY, smokeZ);
+        smokeCloud.userData = {
+            initialRadius: smokeRadius,
+            lat: lat,
+            lon: lon,
+            riseSpeed: 0.002 + i * 0.0005,
+            index: i
+        };
+        
+        earth.add(smokeCloud);
+        smokeClouds.push(smokeCloud);
+    }
+    
     const fireData = { 
         marker: fireMarker, 
         glow: glow,
+        smokeClouds: smokeClouds,
         position: new THREE.Vector3(x, y, z),
         life: 0,
-        maxLife: 10000 + Math.random() * 5000,
+        maxLife: 30000 + Math.random() * 30000, // 30-60 seconds (much longer)
         detected: false,
         confirming: false,
         confirmedBy: []
@@ -606,17 +648,47 @@ function animateHero() {
         fire.marker.material.opacity = 0.95 * pulse;
         fire.glow.material.opacity = 0.5 * pulse;
         
+        // Animate smoke clouds rising and dissipating
+        if (fire.smokeClouds) {
+            fire.smokeClouds.forEach((cloud, cloudIndex) => {
+                const userData = cloud.userData;
+                // Rise upward from fire
+                userData.initialRadius += userData.riseSpeed;
+                
+                // Recalculate position as smoke rises
+                const newX = userData.initialRadius * Math.cos(userData.lat) * Math.cos(userData.lon);
+                const newZ = userData.initialRadius * Math.cos(userData.lat) * Math.sin(userData.lon);
+                const newY = userData.initialRadius * Math.sin(userData.lat);
+                cloud.position.set(newX, newY, newZ);
+                
+                // Expand and fade smoke
+                const ageProgress = fire.life / fire.maxLife;
+                cloud.scale.set(1 + ageProgress * 2, 1 + ageProgress * 2, 1 + ageProgress * 2);
+                cloud.material.opacity = (0.3 - cloudIndex * 0.04) * (1 - ageProgress * 0.7);
+            });
+        }
+        
         if (fire.life > fire.maxLife) {
-            const fadeProgress = (fire.life - fire.maxLife) / 1000;
+            const fadeProgress = (fire.life - fire.maxLife) / 3000; // Longer fade (3 seconds)
             fire.marker.material.opacity *= Math.max(0, 1 - fadeProgress);
             fire.glow.material.opacity *= Math.max(0, 1 - fadeProgress);
+            // Fade smoke too
+            if (fire.smokeClouds) {
+                fire.smokeClouds.forEach(cloud => {
+                    cloud.material.opacity *= Math.max(0, 1 - fadeProgress);
+                });
+            }
         }
     });
 
     fires = fires.filter(fire => {
-        if (fire.life > fire.maxLife + 1000) {
+        if (fire.life > fire.maxLife + 3000) { // 3 second fade period
             earth.remove(fire.marker);
             earth.remove(fire.glow);
+            // Clean up smoke clouds
+            if (fire.smokeClouds) {
+                fire.smokeClouds.forEach(cloud => earth.remove(cloud));
+            }
             return false;
         }
         return true;
