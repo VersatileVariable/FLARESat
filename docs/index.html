@@ -314,16 +314,46 @@
 
     <!-- 3D Earth Visualization Section -->
     <section id="visualization" class="section" style="background: #000000; padding: 0;">
-        <div class="container" style="padding-top: 3rem;">
-            <h2 class="section-title" style="color: #ffffff; font-size: 2.5rem;">See FLARESat in Action</h2>
-            <p style="color: #cccccc; text-align: center; margin-bottom: 1rem; font-size: 1.2rem;">
-                Watch our Walker Delta constellation detect and monitor wildfires in real-time
-            </p>
-            <p style="color: #4ecdc4; text-align: center; margin-bottom: 2rem; font-size: 1rem;">
-                🔴 Red markers = Active fires • 🛰️ Colored satellites = 20 orbital planes • Yellow lines = Detection in progress
-            </p>
+        <!-- Gradient Container -->
+        <div style="background: linear-gradient(to bottom, #ffffff, #000000); 
+            min-height: 60vh; 
+            padding: 3rem 0 2rem 0; 
+            display: flex; 
+            align-items: center;">
+            <div class="container" style="width: 100%;">
+                <h2 class="section-title" style="color: #ffffff; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">See FLARESat in Action</h2>
+                <p style="color: #cccccc; text-align: center; margin-bottom: 0; font-size: 1.2rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
+                    Watch our Walker Delta constellation detect and monitor wildfires in real-time
+                </p>
+            </div>
         </div>
+        <!-- 3D Visualization -->
         <div class="hero-background" style="height: 100vh; position: relative;"></div>
+        <div class="container" style="padding: 2rem 0 3rem 0;">
+            <div style="color: #4ecdc4; text-align: center; font-size: 1rem; line-height: 2.2; max-width: 900px; margin-left: auto; margin-right: auto;">
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #ff4444; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Active fires</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #666666; border: 1px solid #888; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Smoke clouds</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #4ecdc4, #ff6b6b); border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">20 orbital planes</span>
+                </div>
+                <br>
+                <div style="display: inline-block; margin: 0 1rem; margin-top: 0.5rem;">
+                    <span style="display: inline-block; width: 30px; height: 3px; background: #00ff00; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Optical camera (clear view)</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem; margin-top: 0.5rem;">
+                    <span style="display: inline-block; width: 30px; height: 3px; background: #ff6600; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">SWIR (sees through smoke)</span>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Footer -->

@@ -61,6 +61,7 @@ let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let autoRotate = true;
 let confirmatingSatellites = [];
+let weatherClouds = [];
 
 function initHero3D() {
     const container = document.querySelector('.hero-background');
@@ -103,7 +104,7 @@ function initHero3D() {
         shininess: 60,          // Glossy surface for water reflection
     });
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    earth.position.y = -35;
+    earth.position.y = -30;
     earth.rotation.z = Math.PI / 2; // Rotate 90 degrees so poles are on X axis
     scene.add(earth);
 
@@ -182,7 +183,7 @@ function initHero3D() {
     const satellitesPerPlane = totalSatellites / numPlanes; // 25 satellites per plane
     const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
     const orbitRadius = 14; // ~500-550 km altitude
-    const orbitSpeed = 0.0006;
+    const orbitSpeed = 0.0003; // Slower orbital speed (was 0.0006)
     const phasingFactor = 1; // Phase offset between planes (f=1 in Walker notation)
     
     // Color palette for 20 orbital planes
@@ -264,6 +265,7 @@ function initHero3D() {
     }
 
     createFires();
+    createWeatherClouds();
     createStars();
     setupHeroMouseControls();
 
@@ -275,6 +277,11 @@ function initHero3D() {
     setInterval(() => {
         spawnRandomFire();
     }, 2000);
+    
+    // Spawn new weather clouds every 5 seconds (more frequent)
+    setInterval(() => {
+        spawnWeatherCloud();
+    }, 5000);
 }
 
 function createEarthDetails() {
@@ -389,6 +396,89 @@ function createFires() {
     for (let i = 0; i < 15; i++) {
         spawnRandomFire();
     }
+}
+
+function createWeatherClouds() {
+    // Create initial weather clouds that satellites must see through
+    for (let i = 0; i < 15; i++) {
+        spawnWeatherCloud();
+    }
+}
+
+function spawnWeatherCloud() {
+    // Limit number of weather clouds
+    if (weatherClouds.length > 20) {
+        const oldCloud = weatherClouds.shift();
+        earth.remove(oldCloud.mesh);
+    }
+
+    // Random position on Earth surface
+    const maxLatitude = 70 * (Math.PI / 180); // Weather clouds can appear up to ±70°
+    const lat = (Math.random() - 0.5) * 2 * maxLatitude;
+    const lon = Math.random() * Math.PI * 2;
+    const radius = 10.5; // Higher in atmosphere (was 10.15)
+    
+    // Create low-poly cloud using multiple overlapping icosahedrons
+    const cloudGroup = new THREE.Group();
+    const numPuffs = 5 + Math.floor(Math.random() * 4); // 5-8 cloud puffs
+    
+    for (let i = 0; i < numPuffs; i++) {
+        // Use IcosahedronGeometry with detail 0 or 1 for low-poly angular look
+        const puffGeometry = new THREE.IcosahedronGeometry(
+            0.2 + Math.random() * 0.2, // Random size 0.2-0.4
+            Math.floor(Math.random() * 2) // Detail level 0 or 1 for low-poly
+        );
+        const puffMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.9, // Higher opacity for whiter appearance
+            shininess: 10,
+            emissive: 0xffffff, // Pure white emissive for brighter clouds
+            emissiveIntensity: 0.3, // Stronger emission for whiter look
+            flatShading: true // Makes polygon faces visible and angular
+        });
+        const puff = new THREE.Mesh(puffGeometry, puffMaterial);
+        
+        // Random offset within cloud group
+        puff.position.set(
+            (Math.random() - 0.5) * 0.7,
+            (Math.random() - 0.5) * 0.25,
+            (Math.random() - 0.5) * 0.7
+        );
+        
+        // Random rotation for more variation
+        puff.rotation.set(
+            Math.random() * Math.PI,
+            Math.random() * Math.PI,
+            Math.random() * Math.PI
+        );
+        
+        cloudGroup.add(puff);
+    }
+    
+    // Position cloud higher in atmosphere
+    const x = radius * Math.cos(lat) * Math.cos(lon);
+    const z = radius * Math.cos(lat) * Math.sin(lon);
+    const y = radius * Math.sin(lat);
+    
+    cloudGroup.position.set(x, y, z);
+    cloudGroup.lookAt(0, 0, 0);
+    
+    earth.add(cloudGroup);
+    
+    const cloudData = {
+        mesh: cloudGroup,
+        position: new THREE.Vector3(x, y, z),
+        lat: lat,
+        lon: lon,
+        radius: radius,
+        driftSpeed: 0.00005 + Math.random() * 0.00005, // Slow drift
+        driftAngle: Math.random() * Math.PI * 2,
+        life: 0,
+        maxLife: 60000 + Math.random() * 60000 // 60-120 seconds
+    };
+    
+    weatherClouds.push(cloudData);
 }
 
 function spawnRandomFire() {
@@ -561,42 +651,11 @@ function createStars() {
 }
 
 function setupHeroMouseControls() {
-    const canvas = renderer.domElement;
-    
-    canvas.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        autoRotate = false;
-        previousMousePosition = { x: e.clientX, y: e.clientY };
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-
-        const deltaX = e.clientX - previousMousePosition.x;
-        const deltaY = e.clientY - previousMousePosition.y;
-        
-        // Rotate on Y axis (horizontal mouse movement)
-        earth.rotation.y += deltaX * 0.005;
-        
-        // Rotate on X axis (vertical mouse movement)
-        earth.rotation.x += deltaY * 0.005;
-
-        previousMousePosition = { x: e.clientX, y: e.clientY };
-    });
-
-    canvas.addEventListener('mouseup', () => {
-        isDragging = false;
-        setTimeout(() => { autoRotate = true; }, 2000);
-    });
-
-    canvas.addEventListener('mouseleave', () => {
-        isDragging = false;
-    });
-    
+    // Manual rotation controls removed - Earth rotates automatically only
+    // This prevents user interaction from interfering with the visualization
     // ========== SCROLL HANDLING ==========
     // NO wheel/scroll event listener on canvas to ensure page scrolling always works
-    // Mouse wheel will only scroll the page, not rotate the 3D Earth
-    // Users can still rotate Earth using mouse drag (X/Y axes)
+    // Mouse wheel will only scroll the page, not interact with the 3D Earth
     // This ensures smooth page navigation without interference from the 3D model
 }
 
@@ -605,9 +664,8 @@ function animateHero() {
 
     const time = Date.now();
 
-    if (autoRotate) {
-        earth.rotation.x += 0.0005; // Rotate around X-axis (along equator line)
-    }
+    // Automatic rotation only - no manual control
+    earth.rotation.x += 0.0002; // Slower rotation around X-axis (along equator line)
 
     // Clear old detection lines
     detectionLines.forEach(line => earth.remove(line));
@@ -737,6 +795,44 @@ function animateHero() {
         return true;
     });
 
+    // Animate and manage weather clouds
+    weatherClouds.forEach((cloud, index) => {
+        cloud.life += 16;
+        
+        // Slow drift movement
+        const newLon = cloud.lon + Math.sin(cloud.driftAngle + time * 0.0001) * cloud.driftSpeed;
+        
+        // Recalculate position with drift
+        const x = cloud.radius * Math.cos(cloud.lat) * Math.cos(newLon);
+        const z = cloud.radius * Math.cos(cloud.lat) * Math.sin(newLon);
+        const y = cloud.radius * Math.sin(cloud.lat);
+        
+        cloud.mesh.position.set(x, y, z);
+        cloud.lon = newLon;
+        
+        // Subtle pulsing opacity (keeping clouds whiter)
+        const pulse = Math.sin(time * 0.001 + index * 0.5) * 0.05 + 0.95;
+        cloud.mesh.children.forEach(puff => {
+            puff.material.opacity = 0.9 * pulse;
+        });
+        
+        // Fade out at end of life
+        if (cloud.life > cloud.maxLife) {
+            const fadeProgress = (cloud.life - cloud.maxLife) / 5000; // 5 second fade
+            cloud.mesh.children.forEach(puff => {
+                puff.material.opacity *= Math.max(0, 1 - fadeProgress);
+            });
+        }
+    });
+    
+    weatherClouds = weatherClouds.filter(cloud => {
+        if (cloud.life > cloud.maxLife + 5000) { // 5 second fade period
+            earth.remove(cloud.mesh);
+            return false;
+        }
+        return true;
+    });
+
     renderer.render(scene, camera);
 }
 
@@ -747,6 +843,7 @@ function checkFireDetection(satellite) {
     const detectionRadius = 6; // Satellites must be within 6 units to detect fire
     const maxDetectionAngle = 15 * (Math.PI / 180); // 15 degrees maximum detection angle
     const smokeInterferenceThreshold = 0.4; // Distance threshold for smoke interference
+    const cloudBlockDistance = 1.5; // Weather clouds block detection within this distance
     
     fires.forEach(fire => {
         if (fire.life > fire.maxLife) return;
@@ -766,17 +863,26 @@ function checkFireDetection(satellite) {
             
             // Only detect if angle is within maximum detection angle
             if (angle <= maxDetectionAngle) {
-                // Determine detection mode and line color based on smoke presence
+                // Check if weather clouds are blocking the line of sight
+                let blockedByCloud = false;
+                weatherClouds.forEach(cloud => {
+                    const distanceToCloud = cloud.position.distanceTo(fire.position);
+                    if (distanceToCloud < cloudBlockDistance) {
+                        blockedByCloud = true;
+                    }
+                });
+                
+                // Determine detection mode and line color based on smoke/cloud presence
                 let detectionMode = 'optical'; // Default: clear optical camera
                 let lineColor = 0x00ff00; // Green for optical (visible light camera)
                 let detectionType = 'Optical Camera';
                 
-                // If fire has smoke, automatically use SWIR (Short-Wave Infrared)
-                // SWIR can penetrate smoke and haze to detect fires underneath
-                if (fire.hasSmoke) {
+                // If fire has smoke OR blocked by weather clouds, automatically use SWIR (Short-Wave Infrared)
+                // SWIR can penetrate smoke, haze, and weather clouds to detect fires underneath
+                if (fire.hasSmoke || blockedByCloud) {
                     detectionMode = 'swir';
-                    lineColor = 0xff6600; // Orange/red for SWIR (infrared sees through smoke)
-                    detectionType = 'SWIR (Infrared)';
+                    lineColor = 0xff6600; // Orange/red for SWIR (infrared sees through clouds)
+                    detectionType = blockedByCloud ? 'SWIR (Through Clouds)' : 'SWIR (Through Smoke)';
                 }
                 
                 // Mark fire as detected if not already
