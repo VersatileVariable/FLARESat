@@ -440,44 +440,60 @@ function spawnRandomFire() {
     earth.add(fireMarker);
     earth.add(glow);
     
-    // Create smoke clouds that rise from the fire
+    // Randomly determine if this fire produces smoke (50% chance)
+    const hasSmoke = Math.random() > 0.5;
     const smokeClouds = [];
-    const numSmokeClouds = 5;
     
-    for (let i = 0; i < numSmokeClouds; i++) {
-        const smokeGeometry = new THREE.SphereGeometry(0.2 + i * 0.08, 8, 8);
-        const smokeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x666666,
-            transparent: true,
-            opacity: 0.3 - i * 0.04,
-            depthTest: true,  // Ensure smoke doesn't obstruct orbit lines
-            depthWrite: false // Allow transparency to work correctly
-        });
-        const smokeCloud = new THREE.Mesh(smokeGeometry, smokeMaterial);
+    if (hasSmoke) {
+        // Create smoke clouds that rise from the fire
+        const numSmokeClouds = 5;
         
-        // Position smoke slightly above fire
-        const smokeRadius = radius + 0.15 + i * 0.1;
-        const smokeX = smokeRadius * Math.cos(lat) * Math.cos(lon);
-        const smokeZ = smokeRadius * Math.cos(lat) * Math.sin(lon);
-        const smokeY = smokeRadius * Math.sin(lat);
-        
-        smokeCloud.position.set(smokeX, smokeY, smokeZ);
-        smokeCloud.userData = {
-            initialRadius: smokeRadius,
-            lat: lat,
-            lon: lon,
-            riseSpeed: 0.002 + i * 0.0005,
-            index: i
-        };
-        
-        earth.add(smokeCloud);
-        smokeClouds.push(smokeCloud);
+        for (let i = 0; i < numSmokeClouds; i++) {
+            // Use IcosahedronGeometry with low detail (0-1) for angular, polygon look
+            const smokeGeometry = new THREE.IcosahedronGeometry(0.2 + i * 0.08, Math.floor(Math.random() * 2));
+            const smokeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x666666,
+                transparent: true,
+                opacity: 0.3 - i * 0.04,
+                depthTest: true,  // Ensure smoke doesn't obstruct orbit lines
+                depthWrite: false, // Allow transparency to work correctly
+                flatShading: true  // Makes polygons more visible/angular
+            });
+            const smokeCloud = new THREE.Mesh(smokeGeometry, smokeMaterial);
+            
+            // Position smoke slightly above fire
+            const smokeRadius = radius + 0.15 + i * 0.1;
+            const smokeX = smokeRadius * Math.cos(lat) * Math.cos(lon);
+            const smokeZ = smokeRadius * Math.cos(lat) * Math.sin(lon);
+            const smokeY = smokeRadius * Math.sin(lat);
+            
+            smokeCloud.position.set(smokeX, smokeY, smokeZ);
+            smokeCloud.userData = {
+                initialRadius: smokeRadius,
+                baseRadius: smokeRadius, // Store starting radius
+                maxHeight: radius + 0.8, // Limit smoke to stay closer to surface (max 0.8 units above Earth)
+                lat: lat,
+                lon: lon,
+                riseSpeed: 0.0015 + Math.random() * 0.001, // Much slower rise (stays near surface)
+                driftAngle: Math.random() * Math.PI * 2, // Random drift direction
+                driftSpeed: 0.0003 + Math.random() * 0.0004, // Random drift magnitude
+                rotationSpeed: (Math.random() - 0.5) * 0.02, // Random rotation
+                turbulence: Math.random() * 0.002, // Adds organic wobble
+                initialOpacity: 0.35 - i * 0.05, // Store initial opacity
+                scaleVariation: 0.8 + Math.random() * 0.4, // Random size variation
+                index: i
+            };
+            
+            earth.add(smokeCloud);
+            smokeClouds.push(smokeCloud);
+        }
     }
     
     const fireData = { 
         marker: fireMarker, 
         glow: glow,
-        smokeClouds: smokeClouds,
+        smokeClouds: hasSmoke ? smokeClouds : null, // Only add smoke if this fire has it
+        hasSmoke: hasSmoke, // Track whether this fire produces smoke
         position: new THREE.Vector3(x, y, z),
         life: 0,
         maxLife: 30000 + Math.random() * 30000, // 30-60 seconds (much longer)
@@ -648,23 +664,49 @@ function animateHero() {
         fire.marker.material.opacity = 0.95 * pulse;
         fire.glow.material.opacity = 0.5 * pulse;
         
-        // Animate smoke clouds rising and dissipating
+        // Animate smoke clouds rising and dissipating with organic movement
         if (fire.smokeClouds) {
             fire.smokeClouds.forEach((cloud, cloudIndex) => {
                 const userData = cloud.userData;
-                // Rise upward from fire
-                userData.initialRadius += userData.riseSpeed;
+                const ageProgress = fire.life / fire.maxLife;
                 
-                // Recalculate position as smoke rises
-                const newX = userData.initialRadius * Math.cos(userData.lat) * Math.cos(userData.lon);
-                const newZ = userData.initialRadius * Math.cos(userData.lat) * Math.sin(userData.lon);
-                const newY = userData.initialRadius * Math.sin(userData.lat);
+                // Rise upward from fire with slower acceleration
+                userData.initialRadius += userData.riseSpeed * (1 + ageProgress * 0.3);
+                
+                // Clamp smoke to max height (don't let it go too far into atmosphere)
+                userData.initialRadius = Math.min(userData.initialRadius, userData.maxHeight);
+                
+                // Add organic drift (smoke moves sideways as it rises)
+                const driftLat = userData.lat + Math.sin(userData.driftAngle + time * 0.001) * userData.driftSpeed;
+                const driftLon = userData.lon + Math.cos(userData.driftAngle + time * 0.001) * userData.driftSpeed;
+                
+                // Add turbulence for organic wobble
+                const turbulenceOffset = Math.sin(time * 0.002 + cloudIndex) * userData.turbulence;
+                
+                // Recalculate position with drift and turbulence (clamped to max height)
+                const smokeRadius = userData.initialRadius + turbulenceOffset;
+                const newX = smokeRadius * Math.cos(driftLat) * Math.cos(driftLon);
+                const newZ = smokeRadius * Math.cos(driftLat) * Math.sin(driftLon);
+                const newY = smokeRadius * Math.sin(driftLat);
                 cloud.position.set(newX, newY, newZ);
                 
-                // Expand and fade smoke
-                const ageProgress = fire.life / fire.maxLife;
-                cloud.scale.set(1 + ageProgress * 2, 1 + ageProgress * 2, 1 + ageProgress * 2);
-                cloud.material.opacity = (0.3 - cloudIndex * 0.04) * (1 - ageProgress * 0.7);
+                // Rotate smoke clouds for organic look
+                cloud.rotation.x += userData.rotationSpeed;
+                cloud.rotation.y += userData.rotationSpeed * 0.7;
+                
+                // Expand with non-linear growth (faster expansion as it ages)
+                const expansionFactor = 1 + Math.pow(ageProgress, 1.5) * 2.5 * userData.scaleVariation;
+                cloud.scale.set(expansionFactor, expansionFactor, expansionFactor);
+                
+                // Quick, non-linear fade with organic variation
+                // Smoke disappears much faster now (cubic falloff)
+                const fadeProgress = Math.pow(ageProgress, 2.5); // Much steeper curve
+                const organicFade = Math.sin(time * 0.004 + cloudIndex) * 0.1 + 0.9; // Subtle pulsing
+                cloud.material.opacity = userData.initialOpacity * (1 - fadeProgress) * organicFade;
+                
+                // Change color as smoke ages (darker to lighter gray)
+                const grayValue = Math.floor(0x66 + (0x99 - 0x66) * ageProgress);
+                cloud.material.color.setHex((grayValue << 16) | (grayValue << 8) | grayValue);
             });
         }
         
@@ -703,6 +745,7 @@ function animateHero() {
 function checkFireDetection(satellite) {
     const detectionRadius = 6; // Satellites must be within 6 units to detect fire
     const maxDetectionAngle = 15 * (Math.PI / 180); // 15 degrees maximum detection angle
+    const smokeInterferenceThreshold = 0.4; // Distance threshold for smoke interference
     
     fires.forEach(fire => {
         if (fire.life > fire.maxLife) return;
@@ -720,26 +763,64 @@ function checkFireDetection(satellite) {
             // Calculate angle between vectors (in radians)
             const angle = Math.acos(satToFire.dot(satToEarthCenter));
             
-            // Only detect if angle is within 7 degrees of pointing at Earth center
+            // Only detect if angle is within maximum detection angle
             if (angle <= maxDetectionAngle) {
+                // Check if smoke clouds are obstructing the line of sight
+                let smokeObstruction = false;
+                let smokeObstructionLevel = 0;
+                
+                if (fire.smokeClouds && fire.smokeClouds.length > 0) {
+                    // Check each smoke cloud to see if it's between satellite and fire
+                    fire.smokeClouds.forEach(cloud => {
+                        const satToCloud = satellite.position.distanceTo(cloud.position);
+                        const cloudToFire = cloud.position.distanceTo(fire.position);
+                        
+                        // If smoke cloud is between satellite and fire (within detection cone)
+                        if (satToCloud < distance && cloudToFire < smokeInterferenceThreshold) {
+                            // Calculate if smoke is in the line of sight
+                            const satToCloudVec = new THREE.Vector3().subVectors(cloud.position, satellite.position).normalize();
+                            const alignment = satToCloudVec.dot(satToFire);
+                            
+                            // If smoke cloud is aligned with line of sight (threshold 0.95 = ~18° cone)
+                            if (alignment > 0.95) {
+                                smokeObstruction = true;
+                                // Accumulate obstruction level based on cloud opacity
+                                smokeObstructionLevel += cloud.material.opacity;
+                            }
+                        }
+                    });
+                }
+                
+                // Determine detection mode and line color
+                let detectionMode = 'optical'; // Default: clear optical camera
+                let lineColor = 0x00ff00; // Green for optical (visible light camera)
+                let detectionType = 'Optical Camera';
+                
+                // If significant smoke obstruction, switch to SWIR (Short-Wave Infrared)
+                if (smokeObstruction && smokeObstructionLevel > 0.3) {
+                    detectionMode = 'swir';
+                    lineColor = 0xff6600; // Orange/red for SWIR (infrared sees through smoke)
+                    detectionType = 'SWIR (Infrared)';
+                }
+                
                 // Mark fire as detected if not already
                 if (!fire.detected) {
                     fire.detected = true;
-                    console.log(`Fire detected at distance ${distance.toFixed(2)} and angle ${(angle * 180 / Math.PI).toFixed(2)}°!`);
+                    console.log(`Fire detected at distance ${distance.toFixed(2)} and angle ${(angle * 180 / Math.PI).toFixed(2)}° using ${detectionType}!`);
                     // Increase satellite glow when detecting
                     satellite.children[0].material.emissiveIntensity = 0.6;
                 }
                 
-                // Create line of sight
+                // Create line of sight with color based on detection mode
                 const lineGeometry = new THREE.BufferGeometry().setFromPoints([
                     satellite.position.clone(),
                     fire.position.clone()
                 ]);
                 const lineMaterial = new THREE.LineBasicMaterial({
-                    color: satellite.userData.orbitColor,
+                    color: lineColor, // Green for optical, Orange for SWIR
                     transparent: true,
-                    opacity: 0.7,
-                    linewidth: 2
+                    opacity: smokeObstruction ? 0.85 : 0.7, // SWIR lines slightly more opaque
+                    linewidth: smokeObstruction ? 3 : 2 // SWIR lines slightly thicker
                 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 earth.add(line);
