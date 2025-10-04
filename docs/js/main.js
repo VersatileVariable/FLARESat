@@ -74,9 +74,9 @@ function initHero3D() {
         0.1,
         1000
     );
-    // Position camera further back and lower to see more vertically without fisheye
-    camera.position.set(0, -35, 25);  // Moved camera further back (Z: 12 -> 25)
-    camera.lookAt(0, -5, 0);  // Look slightly higher to show more satellites above
+    // Position camera higher up for better view
+    camera.position.set(0, -20, 15);  // Camera moved up
+    camera.lookAt(0, -20, 0);  // Look at Earth center
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -103,7 +103,8 @@ function initHero3D() {
         shininess: 60,          // Glossy surface for water reflection
     });
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    earth.position.y = -25;
+    earth.position.y = -35;
+    earth.rotation.z = Math.PI / 2; // Rotate 90 degrees so poles are on X axis
     scene.add(earth);
 
     // ========== DARK AURA - ATMOSPHERIC GLOW ==========
@@ -228,7 +229,7 @@ function initHero3D() {
 
         // Place satellites evenly in this orbital plane
         for (let sat = 0; sat < satellitesPerPlane; sat++) {
-            const satellite = createSatellite(colors[plane], 0.2);
+            const satellite = createSatellite(colors[plane], 0.1);
             
             // Calculate initial angle with Walker constellation phasing
             const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / totalSatellites;
@@ -565,19 +566,23 @@ function animateHero() {
         let y = yOrbit;
         let z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
         
-        const nextPos = new THREE.Vector3(x, y, z);
+        // Walker Delta constellation design ensures natural separation
+        // Satellites maintain constant spacing through proper phasing
         
-        // Anti-collision system: Check if next position would cause collision
-        if (checkSatelliteCollision(nextPos, satellite)) {
-            // DON'T move - stay at current position this frame
-            // Satellite will wait until path is clear
-            // This prevents phasing through other satellites
-        } else {
-            // Safe to move - update angle and position
-            data.angle = nextAngle;
-            satellite.position.set(x, y, z);
-        }
+        // Update orbital position
+        data.angle += data.speed;
         
+        // Calculate position in orbital plane
+        xOrbit = data.orbitRadius * Math.cos(data.angle);
+        yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+        zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        
+        // Apply RAAN rotation
+        x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
+        y = yOrbit;
+        z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
+        
+        satellite.position.set(x, y, z);
         satellite.lookAt(0, 0, 0);
         
         // Check for fire detection and draw line of sight
@@ -615,29 +620,8 @@ function animateHero() {
     renderer.render(scene, camera);
 }
 
-function checkSatelliteCollision(newPos, currentSatellite) {
-    const minDistance = 0.25; // Minimum safe distance between satellites (small for tiny satellites)
-    let closestSatellite = null;
-    let closestDistance = Infinity;
-    let collisionDetected = false;
-    
-    for (let satellite of satellites) {
-        if (satellite === currentSatellite) continue;
-        
-        const distance = newPos.distanceTo(satellite.position);
-        
-        if (distance < closestDistance) {
-            closestDistance = distance;
-            closestSatellite = satellite;
-        }
-        
-        if (distance < minDistance) {
-            collisionDetected = true;
-        }
-    }
-    
-    return { detected: collisionDetected, closestSatellite: closestSatellite, distance: closestDistance };
-}
+// Collision avoidance handled through Walker Delta constellation design:
+// Proper phasing ensures satellites maintain natural separation
 
 function checkFireDetection(satellite) {
     const detectionRadius = 6; // Satellites must be within 6 units to detect fire
