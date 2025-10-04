@@ -99,35 +99,95 @@
         </div>
     </nav>
 
-    <!-- Hero Section with 3D Earth -->
-    <section id="home" class="hero">
-        <div class="hero-background"></div>
+    <!-- Hero Section -->
+    <section id="home" class="hero" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 40vh; display: flex; align-items: center; justify-content: center;">
+        <div class="hero-content" style="text-align: center; padding: 4rem 2rem;">
+            <h1 style="font-size: 3.5rem; margin-bottom: 1rem; color: #ffffff;">FLARESat</h1>
+            <p style="font-size: 1.5rem; margin-bottom: 0; color: #ffffff; opacity: 0.95;">
+                Space-Based Wildfire Detection & Monitoring System
+            </p>
+            <p style="font-size: 1.1rem; margin-top: 1rem; color: #ffffff; opacity: 0.9;">
+                Protecting communities worldwide with real-time fire detection from Low Earth Orbit
+            </p>
+        </div>
+    </section>
+    
+    <!-- Statistics Section -->
+    <section class="section" style="background: #f8f9fa; padding: 4rem 2rem;">
+        <div class="container">
+            <h2 class="section-title" style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">The Global Wildfire Crisis</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 3rem; text-align: center; color: #666;">
+                Every year, wildfires devastate communities worldwide
+            </p>
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <!-- Stat 1 - Left -->
+                <div class="stat-card" data-delay="0" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
+                    <div style="text-align: left; max-width: 500px;">
+                        <div class="counter" data-target="60000" style="font-size: 4rem; font-weight: bold; color: #ff6b6b; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Wildfires Annually</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">in the United States alone</div>
+                    </div>
+                </div>
+
+                <!-- Stat 2 - Right -->
+                <div class="stat-card" data-delay="200" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
+                    <div style="text-align: right; max-width: 500px;">
+                        <div class="counter" data-target="100" data-prefix="$" data-suffix="B+" style="font-size: 4rem; font-weight: bold; color: #ff9f43; margin-bottom: 0.5rem;">$0B+</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Economic Damage</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">property, infrastructure, and recovery costs</div>
+                    </div>
+                </div>
+
+                <!-- Stat 3 - Left -->
+                <div class="stat-card" data-delay="400" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
+                    <div style="text-align: left; max-width: 500px;">
+                        <div class="counter" data-target="1000" data-suffix="+" style="font-size: 4rem; font-weight: bold; color: #ee5a6f; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Lives Lost</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">and thousands more injured</div>
+                    </div>
+                </div>
+
+                <!-- Stat 4 - Right -->
+                <div class="stat-card" data-delay="600" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
+                    <div style="text-align: right; max-width: 500px;">
+                        <div class="counter" data-target="10" data-suffix="M+" style="font-size: 4rem; font-weight: bold; color: #a55eea; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Acres Burned</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">destroying ecosystems and homes</div>
+                    </div>
+                </div>
+            </div>
+
+            <p style="font-size: 1.2rem; margin-top: 3rem; max-width: 900px; margin-left: auto; margin-right: auto; text-align: center; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <strong style="color: #667eea;">The Problem:</strong> Current detection systems rely on ground observers, towers, and aircraft—
+                often detecting fires hours or days too late for effective intervention.
+            </p>
+        </div>
     </section>
 
     <!-- Challenge Section -->
     <section id="challenge" class="section">
         <div class="container">
-            <h2 class="section-title">The Challenge</h2>
+            <h2 class="section-title">Why Current Detection Fails</h2>
             <div class="challenge-grid">
                 <div class="challenge-card">
-                    <div class="card-icon">Launch</div>
-                    <h3>Rapid Commercialization</h3>
-                    <p>Space business is accelerating with unprecedented opportunities in LEO</p>
+                    <div class="card-icon">🔥</div>
+                    <h3>Detection Delay</h3>
+                    <p>Ground-based systems detect fires 2-12 hours after ignition, when containment becomes exponentially harder</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Regulate</div>
-                    <h3>Regulatory Complexity</h3>
-                    <p>Navigating international space law and emerging regulations</p>
+                    <div class="card-icon">🌲</div>
+                    <h3>Limited Coverage</h3>
+                    <p>Remote and wilderness areas lack monitoring infrastructure, leaving vast territories unprotected</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Sustain</div>
-                    <h3>Environmental Impact</h3>
-                    <p>Addressing space debris and sustainable orbital operations</p>
+                    <div class="card-icon">🌙</div>
+                    <h3>No Night Vision</h3>
+                    <p>Traditional detection struggles at night and in smoke conditions when fires spread fastest</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Innovate</div>
-                    <h3>Innovation Required</h3>
-                    <p>Creating scalable, sustainable business models for space</p>
+                    <div class="card-icon">💰</div>
+                    <h3>High Operating Costs</h3>
+                    <p>Aircraft patrols and tower networks are expensive and can't provide continuous, global coverage</p>
                 </div>
             </div>
         </div>
@@ -136,25 +196,41 @@
     <!-- Solution Section -->
     <section id="solution" class="section section-alt">
         <div class="container">
-            <h2 class="section-title">Our Solution</h2>
+            <h2 class="section-title" style="font-size: 2.8rem; margin-bottom: 1rem;">Introducing FLARESat</h2>
+            <p style="text-align: center; font-size: 1.4rem; color: #4ecdc4; margin-bottom: 3rem;">
+                Space-Based Fire Detection That Saves Lives and Property
+            </p>
             <div class="solution-content">
                 <div class="solution-text">
-                    <h3>Sustainable LEO Business Model</h3>
-                    <p>
-                        We propose a comprehensive business model that addresses the unique 
-                        challenges of operating in Low Earth Orbit while maximizing the 
-                        economic potential of space commercialization.
+                    <h3 style="color: #4ecdc4; font-size: 2rem;">Our Solution</h3>
+                    <p style="font-size: 1.1rem; line-height: 1.8;">
+                        <strong>FLARESat</strong> is a Walker Delta constellation of 500 satellites in Low Earth Orbit, 
+                        providing <strong>continuous, real-time wildfire detection</strong> across the entire globe.
                     </p>
-                    <ul class="solution-features">
-                        <li>Scalable infrastructure design</li>
-                        <li>Environmental sustainability focus</li>
-                        <li>Regulatory compliance framework</li>
-                        <li>Multi-revenue stream approach</li>
+                    <ul class="solution-features" style="font-size: 1.05rem; line-height: 1.9;">
+                        <li><strong>Early Detection:</strong> Identify fires within 15 minutes of ignition—before they spread</li>
+                        <li><strong>24/7 Global Coverage:</strong> 500 satellites ensure no fire goes undetected, day or night</li>
+                        <li><strong>Thermal Imaging:</strong> Advanced sensors detect heat signatures through smoke and darkness</li>
+                        <li><strong>Multi-Point Verification:</strong> Satellites coordinate to confirm fires, eliminating false alarms</li>
+                        <li><strong>Instant Alerts:</strong> Real-time data transmission to emergency responders worldwide</li>
+                        <li><strong>Scalable & Sustainable:</strong> LEO business model with minimal space debris impact</li>
                     </ul>
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; border-radius: 4px;">
+                        <h4 style="color: #4ecdc4; margin-bottom: 0.5rem;">The Impact</h4>
+                        <p style="font-size: 1.05rem; margin: 0;">
+                            Early detection can reduce firefighting costs by 50-80% and save thousands of lives annually. 
+                            FLARESat turns hours of delay into minutes of action.
+                        </p>
+                    </div>
                 </div>
                 <div class="solution-visual">
-                    <div class="placeholder-box">
-                        <p>Business Model Visualization</p>
+                    <div class="placeholder-box" style="background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(255, 107, 107, 0.2)); border: 2px solid #4ecdc4; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">🛰️</div>
+                        <h3 style="color: #4ecdc4; margin-bottom: 0.5rem;">Walker Delta Constellation</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">56°:500/20/1</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">500 Satellites • 20 Orbital Planes</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">56° Inclination • 500-550km Altitude</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9; margin-top: 1rem;">Diamond Coverage Pattern</p>
                     </div>
                 </div>
             </div>
@@ -236,6 +312,20 @@
         </div>
     </section>
 
+    <!-- 3D Earth Visualization Section -->
+    <section id="visualization" class="section" style="background: #000000; padding: 0;">
+        <div class="container" style="padding-top: 3rem;">
+            <h2 class="section-title" style="color: #ffffff; font-size: 2.5rem;">See FLARESat in Action</h2>
+            <p style="color: #cccccc; text-align: center; margin-bottom: 1rem; font-size: 1.2rem;">
+                Watch our Walker Delta constellation detect and monitor wildfires in real-time
+            </p>
+            <p style="color: #4ecdc4; text-align: center; margin-bottom: 2rem; font-size: 1rem;">
+                🔴 Red markers = Active fires • 🛰️ Colored satellites = 20 orbital planes • Yellow lines = Detection in progress
+            </p>
+        </div>
+        <div class="hero-background" style="height: 180vh; position: relative;"></div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -246,5 +336,66 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+        // Animated Counter for Statistics
+        function animateCounter(element) {
+            const target = parseInt(element.getAttribute('data-target'));
+            const prefix = element.getAttribute('data-prefix') || '';
+            const suffix = element.getAttribute('data-suffix') || '+';
+            const duration = 2000; // 2 seconds
+            const increment = target / (duration / 16); // 60fps
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                
+                // Format number with commas
+                const displayNumber = Math.floor(current).toLocaleString();
+                element.textContent = prefix + displayNumber + suffix;
+            }, 16);
+        }
+        
+        // Intersection Observer for scroll-triggered animations
+        const observerOptions = {
+            threshold: 0.4,
+            rootMargin: '0px'
+        };
+        
+        const statCardsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+                    const delay = parseInt(entry.target.getAttribute('data-delay')) || 0;
+                    
+                    setTimeout(() => {
+                        // Slide in from left or right
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateX(0)';
+                        entry.target.classList.add('animated');
+                        
+                        // Animate counter
+                        const counter = entry.target.querySelector('.counter');
+                        if (counter) {
+                            setTimeout(() => {
+                                animateCounter(counter);
+                            }, 200);
+                        }
+                    }, delay);
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all stat cards when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                statCardsObserver.observe(card);
+            });
+        });
+    </script>
 </body>
 </html>

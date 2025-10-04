@@ -74,9 +74,9 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, -25, 12);
-    camera.lookAt(0, -25, 0);
-    camera.lookAt(0, -8, 0);
+    // Position camera further back and lower to see more vertically without fisheye
+    camera.position.set(0, -35, 25);  // Moved camera further back (Z: 12 -> 25)
+    camera.lookAt(0, -5, 0);  // Look slightly higher to show more satellites above
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -139,21 +139,63 @@ function initHero3D() {
     createEarthDetails();
     createEquator();
 
-    // Walker Constellation: 24/3/1 (24 satellites, 3 planes, phasing factor 1)
-    // Optimized for latitude coverage between 60°N and 60°S
-    const totalSatellites = 24;
-    const numPlanes = 3;
-    const satellitesPerPlane = totalSatellites / numPlanes; // 8 satellites per plane
-    const inclination = 60 * (Math.PI / 180); // 60 degrees inclination for ±60° latitude coverage
-    const orbitRadius = 14;
-    const orbitSpeed = 0.0006;
-    const phasingFactor = 1; // Phase offset between planes
+    // ========== WALKER DELTA CONSTELLATION: 56°:500/20/1 ==========
+    // Based on Walker Delta pattern notation i:t/p/f (similar to Galileo navigation system):
+    // i = 56° inclination (tilt of orbital plane relative to Earth's equator)
+    // t = 500 total satellites
+    // p = 20 orbital planes  
+    // f = 1 phasing factor (relative shift of satellites in adjacent planes)
+    //
+    // Walker Delta Characteristics:
+    // • Provides consistent GLOBAL COVERAGE by distributing satellites across Earth's surface
+    // • Satellites placed in multiple, equally spaced orbital planes
+    // • "Delta" phasing creates DIAMOND-SHAPED coverage pattern near the equator
+    // • Adjacent planes have satellites offset (phased) from each other
+    // • Each plane rotated around Earth's Z-axis by angle of 2π/p (360°/20 = 18°)
+    //
+    // Key Features:
+    // • 500 Satellites Total - 25 satellites evenly distributed in each of the 20 orbital planes
+    // • 20 Orbital Planes - Each plane separated by 18° RAAN (Right Ascension of Ascending Node)
+    // • 56° Inclination - Common angle for LEO constellations, provides good global coverage
+    //   while avoiding polar regions (similar to Galileo's 56°:24/3/1 configuration)
+    // • Orbital Altitude - ~500-550 km (represented as radius 14 units in simulation)
+    // • Phasing Factor f=1 - Satellites in adjacent planes offset by (f × 360°) / t
+    //   This creates the characteristic delta pattern with optimal coverage gaps
+    // • Uniform Distribution - Equal spacing within planes and coordinated spacing between planes
+    //
+    // Generation Process:
+    // 1. Start with basic inclined orbit at 56°
+    // 2. Replicate orbit 20 times (p=20 planes)
+    // 3. Rotate each plane by 2π/p around Z-axis (18° increments)
+    // 4. Apply phasing offset to satellites in successive planes (slot offset)
+    //
+    // This constellation provides:
+    // ✓ Consistent global coverage (Walker Delta ensures minimal gaps)
+    // ✓ Diamond-shaped coverage pattern for efficient Earth monitoring
+    // ✓ Similar to Galileo (56°:24/3/1) and GPS navigation systems
+    // ✓ Optimal for global fire detection with rapid revisit times
+    // ✓ Highly scalable design following established satellite navigation patterns
     
-    const colors = [0xff6b6b, 0x4ecdc4, 0xffe66d]; // One color per plane
+    const totalSatellites = 500;
+    const numPlanes = 20;
+    const satellitesPerPlane = totalSatellites / numPlanes; // 25 satellites per plane
+    const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
+    const orbitRadius = 14; // ~500-550 km altitude
+    const orbitSpeed = 0.0006;
+    const phasingFactor = 1; // Phase offset between planes (f=1 in Walker notation)
+    
+    // Color palette for 20 orbital planes
+    const colors = [
+        0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 0xffa07a,
+        0x98d8c8, 0xf7b731, 0xeb4d4b, 0x6ab04c, 0x00a8ff,
+        0xe056fd, 0x686de0, 0x30336b, 0xf8b500, 0xff3838,
+        0x7ed6df, 0xf368e0, 0xff9ff3, 0x48dbfb, 0x0abde3
+    ];
 
     for (let plane = 0; plane < numPlanes; plane++) {
         // Calculate RAAN (Right Ascension of Ascending Node) for each plane
-        const raan = (plane * 2 * Math.PI) / numPlanes;
+        // Walker Delta: Each plane rotated around Earth's Z-axis by 2π/p
+        const raan = (plane * 2 * Math.PI) / numPlanes; // 360° / 20 planes = 18° spacing
         
         // Create orbit line for this plane
         const orbitPoints = [];
@@ -186,7 +228,7 @@ function initHero3D() {
 
         // Place satellites evenly in this orbital plane
         for (let sat = 0; sat < satellitesPerPlane; sat++) {
-            const satellite = createSatellite(colors[plane], 0.6);
+            const satellite = createSatellite(colors[plane], 0.2);
             
             // Calculate initial angle with Walker constellation phasing
             const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / totalSatellites;
@@ -364,7 +406,9 @@ function spawnRandomFire() {
     });
     const glow = new THREE.Mesh(glowGeometry, glowMaterial);
     
-    const lat = (Math.random() - 0.5) * Math.PI;
+    // Restrict fires to ±56° latitude (matching 56° Walker Delta constellation coverage)
+    const maxLatitude = 56 * (Math.PI / 180); // 56 degrees in radians (matches inclination)
+    const lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
     const lon = Math.random() * Math.PI * 2;
     const radius = 10.08;
     
@@ -508,31 +552,32 @@ function animateHero() {
     satellites.forEach(satellite => {
         const data = satellite.userData;
         
-        // Satellites always stay in orbit
-        data.angle += data.speed;
+        // Calculate next position
+        const nextAngle = data.angle + data.speed;
         
-        // Position in orbital plane
-        let xOrbit = data.orbitRadius * Math.cos(data.angle);
-        let yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-        let zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        // Position in orbital plane with next angle
+        let xOrbit = data.orbitRadius * Math.cos(nextAngle);
+        let yOrbit = data.orbitRadius * Math.sin(nextAngle) * Math.sin(data.inclination);
+        let zOrbit = data.orbitRadius * Math.sin(nextAngle) * Math.cos(data.inclination);
         
         // Apply RAAN rotation to position the plane correctly
-        const x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
-        const y = yOrbit;
-        const z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
+        let x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
+        let y = yOrbit;
+        let z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
         
-        const newPos = new THREE.Vector3(x, y, z);
+        const nextPos = new THREE.Vector3(x, y, z);
         
-        // Check collision and adjust if needed
-        if (checkSatelliteCollision(newPos, satellite)) {
-            // Slow down slightly to create spacing
-            data.angle -= data.speed * 0.5;
-            xOrbit = data.orbitRadius * Math.cos(data.angle);
-            yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-            zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        // Anti-collision system: Check if next position would cause collision
+        if (checkSatelliteCollision(nextPos, satellite)) {
+            // DON'T move - stay at current position this frame
+            // Satellite will wait until path is clear
+            // This prevents phasing through other satellites
+        } else {
+            // Safe to move - update angle and position
+            data.angle = nextAngle;
+            satellite.position.set(x, y, z);
         }
         
-        satellite.position.set(x, y, z);
         satellite.lookAt(0, 0, 0);
         
         // Check for fire detection and draw line of sight
@@ -571,21 +616,32 @@ function animateHero() {
 }
 
 function checkSatelliteCollision(newPos, currentSatellite) {
-    const minDistance = 2.0; // Buffer space between satellites
+    const minDistance = 0.25; // Minimum safe distance between satellites (small for tiny satellites)
+    let closestSatellite = null;
+    let closestDistance = Infinity;
+    let collisionDetected = false;
     
     for (let satellite of satellites) {
         if (satellite === currentSatellite) continue;
         
         const distance = newPos.distanceTo(satellite.position);
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestSatellite = satellite;
+        }
+        
         if (distance < minDistance) {
-            return true; // Collision detected
+            collisionDetected = true;
         }
     }
-    return false; // No collision
+    
+    return { detected: collisionDetected, closestSatellite: closestSatellite, distance: closestDistance };
 }
 
 function checkFireDetection(satellite) {
     const detectionRadius = 6; // Satellites must be within 6 units to detect fire
+    const maxDetectionAngle = 15 * (Math.PI / 180); // 15 degrees maximum detection angle
     
     fires.forEach(fire => {
         if (fire.life > fire.maxLife) return;
@@ -593,30 +649,41 @@ function checkFireDetection(satellite) {
         // Calculate distance in local coordinates (relative to Earth)
         const distance = satellite.position.distanceTo(fire.position);
         
-        // Show line of sight if satellite can see the fire
+        // Check if within detection radius
         if (distance < detectionRadius) {
-            // Mark fire as detected if not already
-            if (!fire.detected) {
-                fire.detected = true;
-                console.log(`Fire detected at distance ${distance.toFixed(2)}!`);
-                // Increase satellite glow when detecting
-                satellite.children[0].material.emissiveIntensity = 0.6;
-            }
+            // Calculate angle between satellite-to-fire vector and satellite-to-Earth-center vector
+            // This ensures satellite only detects fires when looking nearly straight down
+            const satToFire = new THREE.Vector3().subVectors(fire.position, satellite.position).normalize();
+            const satToEarthCenter = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), satellite.position).normalize();
             
-            // Create line of sight
-            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-                satellite.position.clone(),
-                fire.position.clone()
-            ]);
-            const lineMaterial = new THREE.LineBasicMaterial({
-                color: satellite.userData.orbitColor,
-                transparent: true,
-                opacity: 0.7,
-                linewidth: 2
-            });
-            const line = new THREE.Line(lineGeometry, lineMaterial);
-            earth.add(line);
-            detectionLines.push(line);
+            // Calculate angle between vectors (in radians)
+            const angle = Math.acos(satToFire.dot(satToEarthCenter));
+            
+            // Only detect if angle is within 7 degrees of pointing at Earth center
+            if (angle <= maxDetectionAngle) {
+                // Mark fire as detected if not already
+                if (!fire.detected) {
+                    fire.detected = true;
+                    console.log(`Fire detected at distance ${distance.toFixed(2)} and angle ${(angle * 180 / Math.PI).toFixed(2)}°!`);
+                    // Increase satellite glow when detecting
+                    satellite.children[0].material.emissiveIntensity = 0.6;
+                }
+                
+                // Create line of sight
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                    satellite.position.clone(),
+                    fire.position.clone()
+                ]);
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: satellite.userData.orbitColor,
+                    transparent: true,
+                    opacity: 0.7,
+                    linewidth: 2
+                });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                earth.add(line);
+                detectionLines.push(line);
+            }
         }
     });
 }
