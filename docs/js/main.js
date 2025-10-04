@@ -665,7 +665,8 @@ function animateHero() {
         fire.glow.material.opacity = 0.5 * pulse;
         
         // Animate smoke clouds rising and dissipating with organic movement
-        if (fire.smokeClouds) {
+        // Only animate if this fire has smoke
+        if (fire.hasSmoke && fire.smokeClouds) {
             fire.smokeClouds.forEach((cloud, cloudIndex) => {
                 const userData = cloud.userData;
                 const ageProgress = fire.life / fire.maxLife;
@@ -714,8 +715,8 @@ function animateHero() {
             const fadeProgress = (fire.life - fire.maxLife) / 3000; // Longer fade (3 seconds)
             fire.marker.material.opacity *= Math.max(0, 1 - fadeProgress);
             fire.glow.material.opacity *= Math.max(0, 1 - fadeProgress);
-            // Fade smoke too
-            if (fire.smokeClouds) {
+            // Fade smoke too (only if fire has smoke)
+            if (fire.hasSmoke && fire.smokeClouds) {
                 fire.smokeClouds.forEach(cloud => {
                     cloud.material.opacity *= Math.max(0, 1 - fadeProgress);
                 });
@@ -727,8 +728,8 @@ function animateHero() {
         if (fire.life > fire.maxLife + 3000) { // 3 second fade period
             earth.remove(fire.marker);
             earth.remove(fire.glow);
-            // Clean up smoke clouds
-            if (fire.smokeClouds) {
+            // Clean up smoke clouds (only if fire has smoke)
+            if (fire.hasSmoke && fire.smokeClouds) {
                 fire.smokeClouds.forEach(cloud => earth.remove(cloud));
             }
             return false;
@@ -765,39 +766,14 @@ function checkFireDetection(satellite) {
             
             // Only detect if angle is within maximum detection angle
             if (angle <= maxDetectionAngle) {
-                // Check if smoke clouds are obstructing the line of sight
-                let smokeObstruction = false;
-                let smokeObstructionLevel = 0;
-                
-                if (fire.smokeClouds && fire.smokeClouds.length > 0) {
-                    // Check each smoke cloud to see if it's between satellite and fire
-                    fire.smokeClouds.forEach(cloud => {
-                        const satToCloud = satellite.position.distanceTo(cloud.position);
-                        const cloudToFire = cloud.position.distanceTo(fire.position);
-                        
-                        // If smoke cloud is between satellite and fire (within detection cone)
-                        if (satToCloud < distance && cloudToFire < smokeInterferenceThreshold) {
-                            // Calculate if smoke is in the line of sight
-                            const satToCloudVec = new THREE.Vector3().subVectors(cloud.position, satellite.position).normalize();
-                            const alignment = satToCloudVec.dot(satToFire);
-                            
-                            // If smoke cloud is aligned with line of sight (threshold 0.95 = ~18° cone)
-                            if (alignment > 0.95) {
-                                smokeObstruction = true;
-                                // Accumulate obstruction level based on cloud opacity
-                                smokeObstructionLevel += cloud.material.opacity;
-                            }
-                        }
-                    });
-                }
-                
-                // Determine detection mode and line color
+                // Determine detection mode and line color based on smoke presence
                 let detectionMode = 'optical'; // Default: clear optical camera
                 let lineColor = 0x00ff00; // Green for optical (visible light camera)
                 let detectionType = 'Optical Camera';
                 
-                // If significant smoke obstruction, switch to SWIR (Short-Wave Infrared)
-                if (smokeObstruction && smokeObstructionLevel > 0.3) {
+                // If fire has smoke, automatically use SWIR (Short-Wave Infrared)
+                // SWIR can penetrate smoke and haze to detect fires underneath
+                if (fire.hasSmoke) {
                     detectionMode = 'swir';
                     lineColor = 0xff6600; // Orange/red for SWIR (infrared sees through smoke)
                     detectionType = 'SWIR (Infrared)';
@@ -819,8 +795,8 @@ function checkFireDetection(satellite) {
                 const lineMaterial = new THREE.LineBasicMaterial({
                     color: lineColor, // Green for optical, Orange for SWIR
                     transparent: true,
-                    opacity: smokeObstruction ? 0.85 : 0.7, // SWIR lines slightly more opaque
-                    linewidth: smokeObstruction ? 3 : 2 // SWIR lines slightly thicker
+                    opacity: fire.hasSmoke ? 0.85 : 0.7, // SWIR lines slightly more opaque
+                    linewidth: fire.hasSmoke ? 3 : 2 // SWIR lines slightly thicker
                 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 earth.add(line);
