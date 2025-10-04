@@ -485,30 +485,11 @@ function setupHeroMouseControls() {
         isDragging = false;
     });
     
-    // Track if mouse is over canvas
-    let isMouseOverCanvas = false;
-    
-    canvas.addEventListener('mouseenter', () => {
-        isMouseOverCanvas = true;
-    });
-    
-    canvas.addEventListener('mouseleave', () => {
-        isMouseOverCanvas = false;
-    });
-    
-    // Add mouse wheel support for Z-axis rotation only when hovering over canvas
-    canvas.addEventListener('wheel', (e) => {
-        if (isMouseOverCanvas) {
-            e.preventDefault();
-            autoRotate = false;
-            earth.rotation.z += e.deltaY * 0.001;
-            
-            // Resume auto-rotate after 2 seconds of no interaction
-            clearTimeout(canvas.wheelTimeout);
-            canvas.wheelTimeout = setTimeout(() => { autoRotate = true; }, 2000);
-        }
-        // If not hovering over canvas, allow normal page scroll (don't preventDefault)
-    }, { passive: false });
+    // ========== SCROLL HANDLING ==========
+    // NO wheel/scroll event listener on canvas to ensure page scrolling always works
+    // Mouse wheel will only scroll the page, not rotate the 3D Earth
+    // Users can still rotate Earth using mouse drag (X/Y axes)
+    // This ensures smooth page navigation without interference from the 3D model
 }
 
 function animateHero() {
