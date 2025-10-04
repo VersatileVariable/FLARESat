@@ -56,9 +56,11 @@ function initFadeAnimations() {
 
 let scene, camera, renderer, earth, satellites = [], orbitLines = [];
 let fires = [];
+let detectionLines = [];
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let autoRotate = true;
+let confirmatingSatellites = [];
 
 function initHero3D() {
     const container = document.querySelector('.hero-background');
@@ -72,8 +74,8 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, -15, 15);
-    camera.lookAt(0, -30, 0);
+    camera.position.set(0, 0, 30);
+    camera.lookAt(0, -25, 0);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -115,7 +117,7 @@ function initHero3D() {
         for (let i = 0; i <= 100; i++) {
             const angle = (i / 100) * Math.PI * 2;
             const x = config.radius * Math.cos(angle);
-            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination) - 25;
+            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination);
             const z = config.radius * Math.sin(angle) * Math.cos(config.inclination);
             orbitPoints.push(new THREE.Vector3(x, y, z));
         }
@@ -128,7 +130,7 @@ function initHero3D() {
         });
 
         const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
-        scene.add(orbitLine);
+        earth.add(orbitLine);
         orbitLines.push({ line: orbitLine, baseOpacity: 0.4 });
 
         for (let i = 0; i < config.satellites; i++) {
@@ -137,9 +139,17 @@ function initHero3D() {
                 orbitRadius: config.radius,
                 speed: config.speed,
                 angle: (i * Math.PI * 2) / config.satellites + (orbitIndex * 0.5),
-                inclination: config.inclination
+                inclination: config.inclination,
+                orbitColor: config.color,
+                isConfirming: false,
+                targetFire: null,
+                originalOrbit: {
+                    radius: config.radius,
+                    speed: config.speed,
+                    inclination: config.inclination
+                }
             };
-            scene.add(satellite);
+            earth.add(satellite);
             satellites.push(satellite);
         }
     });
@@ -242,12 +252,18 @@ function spawnRandomFire() {
     earth.add(fireMarker);
     earth.add(glow);
     
-    fires.push({ 
+    const fireData = { 
         marker: fireMarker, 
         glow: glow,
+        position: new THREE.Vector3(x, y, z),
         life: 0,
-        maxLife: 10000 + Math.random() * 5000
-    });
+        maxLife: 10000 + Math.random() * 5000,
+        detected: false,
+        confirming: false,
+        confirmedBy: []
+    };
+    
+    fires.push(fireData);
 }
 
 function createSatellite(color, scale) {
@@ -318,7 +334,13 @@ function setupHeroMouseControls() {
         if (!isDragging) return;
 
         const deltaX = e.clientX - previousMousePosition.x;
+        const deltaY = e.clientY - previousMousePosition.y;
+        
+        // Rotate on Y axis (horizontal mouse movement)
         earth.rotation.y += deltaX * 0.005;
+        
+        // Rotate on X axis (vertical mouse movement)
+        earth.rotation.x += deltaY * 0.005;
 
         previousMousePosition = { x: e.clientX, y: e.clientY };
     });
@@ -331,6 +353,17 @@ function setupHeroMouseControls() {
     canvas.addEventListener('mouseleave', () => {
         isDragging = false;
     });
+    
+    // Add mouse wheel support for Z-axis rotation
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        autoRotate = false;
+        earth.rotation.z += e.deltaY * 0.001;
+        
+        // Resume auto-rotate after 2 seconds of no interaction
+        clearTimeout(canvas.wheelTimeout);
+        canvas.wheelTimeout = setTimeout(() => { autoRotate = true; }, 2000);
+    }, { passive: false });
 }
 
 function animateHero() {
@@ -342,16 +375,79 @@ function animateHero() {
         earth.rotation.y += 0.0005;
     }
 
+    // Clear old detection lines
+    detectionLines.forEach(line => earth.remove(line));
+    detectionLines = [];
+
     satellites.forEach(satellite => {
         const data = satellite.userData;
-        data.angle += data.speed;
         
-        const x = data.orbitRadius * Math.cos(data.angle);
-        const y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination) - 25;
-        const z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        if (data.isConfirming && data.targetFire) {
+            // Calculate 45-degree offset position for viewing
+            const fireDir = data.targetFire.position.clone().normalize();
+            
+            // Create two perpendicular vectors for 45-degree offset positions
+            const up = new THREE.Vector3(0, 1, 0);
+            const perpendicular1 = new THREE.Vector3().crossVectors(fireDir, up).normalize();
+            const perpendicular2 = new THREE.Vector3().crossVectors(fireDir, perpendicular1).normalize();
+            
+            // Determine which satellite gets which offset (to separate them)
+            const satelliteIndex = data.targetFire.confirmedBy.indexOf(satellite);
+            const angleOffset = satelliteIndex === 0 ? 5 : -5; // One goes left, one goes right
+            const radians = angleOffset * (Math.PI / 180);
+            
+            // Calculate offset position at 45 degrees
+            const offsetDir = fireDir.clone()
+                .multiplyScalar(Math.cos(radians))
+                .add(perpendicular1.clone().multiplyScalar(Math.sin(radians)));
+            
+            const targetPos = offsetDir.normalize().multiplyScalar(12); // Slightly further out
+            const newPos = satellite.position.clone().lerp(targetPos, 0.02);
+            
+            satellite.position.copy(newPos);
+            
+            // Create detection line
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                satellite.position.clone(),
+                data.targetFire.position.clone()
+            ]);
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: data.orbitColor,
+                transparent: true,
+                opacity: 0.8,
+                linewidth: 2
+            });
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            earth.add(line);
+            detectionLines.push(line);
+        } else {
+            // Normal orbit
+            data.angle += data.speed;
+            
+            let x = data.orbitRadius * Math.cos(data.angle);
+            let y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+            let z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+            
+            const newPos = new THREE.Vector3(x, y, z);
+            
+            // Check collision and adjust if needed
+            if (checkSatelliteCollision(newPos, satellite)) {
+                // Slow down slightly to create spacing
+                data.angle -= data.speed * 0.5;
+                x = data.orbitRadius * Math.cos(data.angle);
+                y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+                z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+            }
+            
+            satellite.position.set(x, y, z);
+        }
         
-        satellite.position.set(x, y, z);
-        satellite.lookAt(0, -25, 0);
+        satellite.lookAt(0, 0, 0);
+        
+        // Check for fire detection
+        if (!data.isConfirming) {
+            checkFireDetection(satellite);
+        }
     });
 
     orbitLines.forEach((orbitData, index) => {
@@ -385,6 +481,95 @@ function animateHero() {
     renderer.render(scene, camera);
 }
 
+function checkSatelliteCollision(newPos, currentSatellite) {
+    const minDistance = 2.0; // Buffer space between satellites
+    
+    for (let satellite of satellites) {
+        if (satellite === currentSatellite) continue;
+        
+        const distance = newPos.distanceTo(satellite.position);
+        if (distance < minDistance) {
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision
+}
+
+function checkFireDetection(satellite) {
+    fires.forEach(fire => {
+        if (fire.detected || fire.life > fire.maxLife) return;
+        
+        // Get satellite world position
+        const satWorldPos = new THREE.Vector3();
+        satellite.getWorldPosition(satWorldPos);
+        
+        // Get fire world position
+        const fireWorldPos = new THREE.Vector3();
+        fire.marker.getWorldPosition(fireWorldPos);
+        
+        // Calculate distance
+        const distance = satWorldPos.distanceTo(fireWorldPos);
+        
+        // Detection range
+        if (distance < 8) {
+            fire.detected = true;
+            console.log('Fire detected! Sending confirmation satellites...');
+            
+            // Create detection line
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                satellite.position.clone(),
+                fire.position.clone()
+            ]);
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.9,
+                linewidth: 3
+            });
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            earth.add(line);
+            detectionLines.push(line);
+            
+            // Send 2 nearest satellites to confirm
+            sendConfirmationSatellites(fire, satellite);
+        }
+    });
+}
+
+function sendConfirmationSatellites(fire, detectingSatellite) {
+    // Find 2 nearest satellites that aren't already confirming
+    const availableSatellites = satellites
+        .filter(sat => !sat.userData.isConfirming && sat !== detectingSatellite)
+        .map(sat => {
+            const satWorldPos = new THREE.Vector3();
+            sat.getWorldPosition(satWorldPos);
+            const fireWorldPos = new THREE.Vector3();
+            fire.marker.getWorldPosition(fireWorldPos);
+            return {
+                satellite: sat,
+                distance: satWorldPos.distanceTo(fireWorldPos)
+            };
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 2);
+    
+    availableSatellites.forEach(({ satellite }) => {
+        satellite.userData.isConfirming = true;
+        satellite.userData.targetFire = fire;
+        fire.confirmedBy.push(satellite);
+        
+        // Change satellite color to indicate confirmation mode
+        satellite.children[0].material.emissiveIntensity = 0.8;
+        
+        // After 5 seconds, return to normal orbit
+        setTimeout(() => {
+            satellite.userData.isConfirming = false;
+            satellite.userData.targetFire = null;
+            satellite.children[0].material.emissiveIntensity = 0.3;
+        }, 5000);
+    });
+}
+
 function onHeroResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -407,9 +592,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.nav-menu a');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetId = link.getAttribute('href').substring(1);
-            scrollToSection(targetId);
+            const href = link.getAttribute('href');
+            // Only prevent default for internal section links (starting with #)
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                const targetId = href.substring(1);
+                scrollToSection(targetId);
+            }
+            // Let external links (like dashboard.html) navigate normally
         });
     });
 });

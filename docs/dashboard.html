@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NASA Space Apps Challenge 2025 - LEO Business Dashboard">
+    <title>Dashboard | LEO Business Challenge</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">LEO Business</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#challenge">Challenge</a></li>
+                <li><a href="index.html#solution">Solution</a></li>
+                <li><a href="index.html#team">Team</a></li>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="dashboard-wrapper">
+        <div class="dashboard-main">
+            <!-- Map Section -->
+            <div class="map-section">
+                <canvas id="mapCanvas"></canvas>
+                
+                <div class="legend">
+                    <div class="legend-title">LEO Activity Types</div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ef4444;"></div>
+                        <span>Satellite Launch</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #f59e0b;"></div>
+                        <span>Debris Detection</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #3b82f6;"></div>
+                        <span>Ground Station</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #10b981;"></div>
+                        <span>Active Operations</span>
+                    </div>
+                </div>
+
+                <div class="scale-bar">
+                    Scale: 2000 km
+                </div>
+
+                <div class="map-controls">
+                    <button class="map-btn" id="zoomIn">Zoom In</button>
+                    <button class="map-btn" id="zoomOut">Zoom Out</button>
+                    <button class="map-btn" id="resetView">Reset View</button>
+                </div>
+
+                <div class="info-popup" id="infoPopup">
+                    <div class="info-popup-title" id="popupTitle"></div>
+                    <div class="info-popup-detail" id="popupDetails"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Time Range Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <span>Time Range</span>
+                        <span>📅</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="time-range-buttons">
+                            <button class="time-btn" data-hours="24">24 HRS</button>
+                            <button class="time-btn active" data-hours="168">7 DAYS</button>
+                            <button class="time-btn" data-hours="720">30 DAYS</button>
+                        </div>
+                        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">
+                            Showing data from <span id="dateRange">last 7 days</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hotspots/Layers Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <span>Data Layers</span>
+                        <span>🛰️</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="layer-item">
+                            <input type="checkbox" class="layer-checkbox" checked data-layer="launches">
+                            <div class="layer-color" style="background: #ef4444;"></div>
+                            <div class="layer-name">Satellite Launches</div>
+                            <div class="layer-info" id="launchCount">0</div>
+                        </div>
+                        <div class="layer-item">
+                            <input type="checkbox" class="layer-checkbox" checked data-layer="debris">
+                            <div class="layer-color" style="background: #f59e0b;"></div>
+                            <div class="layer-name">Debris Events</div>
+                            <div class="layer-info" id="debrisCount">0</div>
+                        </div>
+                        <div class="layer-item">
+                            <input type="checkbox" class="layer-checkbox" checked data-layer="stations">
+                            <div class="layer-color" style="background: #3b82f6;"></div>
+                            <div class="layer-name">Ground Stations</div>
+                            <div class="layer-info" id="stationCount">0</div>
+                        </div>
+                        <div class="layer-item">
+                            <input type="checkbox" class="layer-checkbox" checked data-layer="operations">
+                            <div class="layer-color" style="background: #10b981;"></div>
+                            <div class="layer-name">Active Operations</div>
+                            <div class="layer-info" id="operationCount">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <span>Live Statistics</span>
+                        <span>📊</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="stats-grid">
+                            <div class="stat-box" style="border-color: #ef4444;">
+                                <div class="stat-label">Total Events</div>
+                                <div class="stat-value" id="totalEvents">0</div>
+                            </div>
+                            <div class="stat-box" style="border-color: #10b981;">
+                                <div class="stat-label">Active Now</div>
+                                <div class="stat-value" id="activeNow">0</div>
+                            </div>
+                            <div class="stat-box" style="border-color: #3b82f6;">
+                                <div class="stat-label">This Week</div>
+                                <div class="stat-value" id="thisWeek">0</div>
+                            </div>
+                            <div class="stat-box" style="border-color: #f59e0b;">
+                                <div class="stat-label">Alerts</div>
+                                <div class="stat-value" id="alerts">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Quality Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <span>System Status</span>
+                        <span>✅</span>
+                    </div>
+                    <div class="section-content">
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 4px;">
+                                Data Coverage: <span style="color: #4ade80; font-weight: 600;">98.7%</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 4px;">
+                                Last Update: <span style="color: #90caf9;">2 min ago</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">
+                                Tracking: <span style="color: #4ade80; font-weight: 600;">8,247 Objects</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        let canvas, ctx;
+        let dataPoints = [];
+        let visibleLayers = { launches: true, debris: true, stations: true, operations: true };
+        let zoom = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let lastX, lastY;
+
+        const colors = {
+            launches: '#ef4444',
+            debris: '#f59e0b',
+            stations: '#3b82f6',
+            operations: '#10b981'
+        };
+
+        function initMap() {
+            canvas = document.getElementById('mapCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            generateDataPoints();
+            updateCounts();
+            drawMap();
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                drawMap();
+            });
+
+            canvas.addEventListener('mousedown', startDrag);
+            canvas.addEventListener('mousemove', drag);
+            canvas.addEventListener('mouseup', endDrag);
+            canvas.addEventListener('mouseleave', endDrag);
+            canvas.addEventListener('wheel', handleZoom);
+            canvas.addEventListener('mousemove', showPopup);
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        function generateDataPoints() {
+            dataPoints = [];
+            const types = ['launches', 'debris', 'stations', 'operations'];
+            
+            for (let i = 0; i < 250; i++) {
+                const lat = (Math.random() * 180 - 90);
+                const lon = (Math.random() * 360 - 180);
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                dataPoints.push({
+                    lat,
+                    lon,
+                    type,
+                    id: `LEO-${Math.floor(10000 + Math.random() * 90000)}`,
+                    intensity: Math.random(),
+                    timestamp: Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
+                });
+            }
+        }
+
+        function latLonToXY(lat, lon) {
+            const x = ((lon + 180) / 360) * canvas.width * zoom + offsetX;
+            const y = ((90 - lat) / 180) * canvas.height * zoom + offsetY;
+            return { x, y };
+        }
+
+        function drawMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw continents outline
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            drawContinents();
+            
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 0.5;
+            for (let lat = -90; lat <= 90; lat += 30) {
+                const start = latLonToXY(lat, -180);
+                const end = latLonToXY(lat, 180);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            }
+            for (let lon = -180; lon <= 180; lon += 30) {
+                const start = latLonToXY(-90, lon);
+                const end = latLonToXY(90, lon);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            }
+            
+            // Draw data points
+            dataPoints.forEach(point => {
+                if (!visibleLayers[point.type]) return;
+                
+                const pos = latLonToXY(point.lat, point.lon);
+                if (pos.x < -20 || pos.x > canvas.width + 20 || pos.y < -20 || pos.y > canvas.height + 20) return;
+                
+                const size = 3 + point.intensity * 4;
+                
+                // Glow effect
+                const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 2);
+                gradient.addColorStop(0, colors[point.type]);
+                gradient.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Center dot
+                ctx.fillStyle = colors[point.type];
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawContinents() {
+            // Simplified continent outlines
+            const continents = [
+                // North America
+                [[-170, 70], [-120, 70], [-80, 50], [-70, 20], [-80, 10], [-100, 15], [-120, 30], [-140, 50], [-170, 60]],
+                // South America
+                [[-80, 10], [-70, -10], [-60, -30], [-50, -50], [-70, -55], [-80, -40], [-85, -10]],
+                // Europe
+                [[-10, 60], [20, 70], [40, 60], [30, 40], [10, 40], [-10, 50]],
+                // Africa
+                [[-20, 35], [10, 35], [40, 20], [50, -10], [40, -30], [20, -35], [10, -20], [-10, 0], [-20, 20]],
+                // Asia
+                [[40, 70], [80, 75], [140, 50], [140, 20], [120, 10], [100, 20], [70, 40], [40, 50]],
+                // Australia
+                [[110, -10], [150, -10], [155, -40], [120, -40], [110, -25]]
+            ];
+            
+            continents.forEach(continent => {
+                ctx.beginPath();
+                const start = latLonToXY(continent[0][1], continent[0][0]);
+                ctx.moveTo(start.x, start.y);
+                
+                for (let i = 1; i < continent.length; i++) {
+                    const point = latLonToXY(continent[i][1], continent[i][0]);
+                    ctx.lineTo(point.x, point.y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            });
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            
+            offsetX += dx;
+            offsetY += dy;
+            
+            lastX = e.clientX;
+            lastY = e.clientY;
+            
+            drawMap();
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        function handleZoom(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= delta;
+            zoom = Math.max(0.5, Math.min(zoom, 5));
+            drawMap();
+        }
+
+        function showPopup(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const popup = document.getElementById('infoPopup');
+            let found = false;
+            
+            for (let point of dataPoints) {
+                if (!visibleLayers[point.type]) continue;
+                
+                const pos = latLonToXY(point.lat, point.lon);
+                const distance = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
+                
+                if (distance < 10) {
+                    const age = Math.floor((Date.now() - point.timestamp) / (1000 * 60 * 60));
+                    document.getElementById('popupTitle').textContent = point.id;
+                    document.getElementById('popupDetails').innerHTML = `
+                        Type: ${point.type.charAt(0).toUpperCase() + point.type.slice(1)}<br>
+                        Lat: ${point.lat.toFixed(4)}°<br>
+                        Lon: ${point.lon.toFixed(4)}°<br>
+                        Detected: ${age}h ago
+                    `;
+                    popup.style.left = (e.clientX + 15) + 'px';
+                    popup.style.top = (e.clientY + 15) + 'px';
+                    popup.classList.add('visible');
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                popup.classList.remove('visible');
+            }
+        }
+
+        function updateCounts() {
+            const counts = { launches: 0, debris: 0, stations: 0, operations: 0 };
+            dataPoints.forEach(p => counts[p.type]++);
+            
+            document.getElementById('launchCount').textContent = counts.launches;
+            document.getElementById('debrisCount').textContent = counts.debris;
+            document.getElementById('stationCount').textContent = counts.stations;
+            document.getElementById('operationCount').textContent = counts.operations;
+            
+            document.getElementById('totalEvents').textContent = dataPoints.length;
+            document.getElementById('activeNow').textContent = Math.floor(dataPoints.length * 0.15);
+            document.getElementById('thisWeek').textContent = Math.floor(dataPoints.length * 0.6);
+            document.getElementById('alerts').textContent = Math.floor(Math.random() * 8);
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const hours = parseInt(this.dataset.hours);
+                const text = hours === 24 ? 'last 24 hours' : hours === 168 ? 'last 7 days' : 'last 30 days';
+                document.getElementById('dateRange').textContent = text;
+            });
+        });
+
+        document.querySelectorAll('.layer-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                visibleLayers[this.dataset.layer] = this.checked;
+                drawMap();
+            });
+        });
+
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoom *= 1.2;
+            zoom = Math.min(zoom, 5);
+            drawMap();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoom *= 0.8;
+            zoom = Math.max(zoom, 0.5);
+            drawMap();
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            zoom = 1;
+            offsetX = 0;
+            offsetY = 0;
+            drawMap();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initMap);
+
+        // Auto-refresh data
+        setInterval(() => {
+            generateDataPoints();
+            updateCounts();
+            drawMap();
+        }, 30000);
+    </script>
+</body>
+</html>
