@@ -543,7 +543,7 @@ function animateHero() {
     const time = Date.now();
 
     if (autoRotate) {
-        earth.rotation.y += 0.0005;
+        earth.rotation.x += 0.0005; // Rotate around X-axis (along equator line)
     }
 
     // Clear old detection lines
