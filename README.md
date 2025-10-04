@@ -1,5 +1,7 @@
 # FLARESat 🛰️
 
+#Website: https://versatilevariable.github.io/FLARESat/
+
 ## About the Project
 
 FLARESat is a web-based platform for satellite monitoring and data visualization. This project was developed as part of the NASA Apps Challenge 2025.
