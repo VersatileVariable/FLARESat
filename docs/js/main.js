@@ -74,8 +74,9 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, 0, 20);
+    camera.position.set(0, -25, 12);
     camera.lookAt(0, -25, 0);
+    camera.lookAt(0, -8, 0);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -93,38 +94,88 @@ function initHero3D() {
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
+    // ========== EARTH SPHERE ==========
+    // Main Earth sphere with blue ocean color
     const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
-            const earthMaterial = new THREE.MeshPhongMaterial({
-        color: 0x4a90e2,
-        emissive: 0x000000,
-        shininess: 60,
+    const earthMaterial = new THREE.MeshPhongMaterial({
+        color: 0x4a90e2,        // Ocean blue color
+        emissive: 0x000000,     // No self-illumination
+        shininess: 60,          // Glossy surface for water reflection
     });
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
     earth.position.y = -25;
     scene.add(earth);
 
+    // ========== DARK AURA - ATMOSPHERIC GLOW ==========
+    // This creates the dark blue/purple halo effect around Earth that simulates the atmosphere
+    // The sphere is slightly larger than Earth and uses BackSide rendering to create an outer glow
+    // Note: Currently removed for cleaner look, but code preserved for reference
+    // Uncomment the following block to enable the atmospheric aura:
+    /*
+    const atmosphereGeometry = new THREE.SphereGeometry(10.4, 64, 64);  // Slightly larger than Earth (10.4 vs 10)
+    const atmosphereMaterial = new THREE.MeshBasicMaterial({
+        color: 0x667eea,              // Purple-blue atmosphere color
+        transparent: true,             // Must be transparent to show Earth beneath
+        opacity: 0.25,                 // Low opacity for subtle glow effect
+        side: THREE.BackSide          // DARK AURA: Renders only the inside faces, creating outer glow from within
+    });
+    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    atmosphere.position.y = -25;       // Same Y position as Earth
+    scene.add(atmosphere);
+
+    // Optional: Additional outer glow layer for enhanced atmospheric depth
+    const outerGlowGeometry = new THREE.SphereGeometry(11, 64, 64);     // Even larger sphere for extended glow
+    const outerGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x667eea,              // Same purple-blue color
+        transparent: true,
+        opacity: 0.1,                 // Very subtle outer layer
+        side: THREE.BackSide          // DARK AURA: BackSide rendering creates the halo effect
+    });
+    const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+    outerGlow.position.y = -25;
+    scene.add(outerGlow);
+    */
+
     createEarthDetails();
+    createEquator();
 
-    const orbitConfigs = [
-        { radius: 12, color: 0xff6b6b, speed: 0.0008, inclination: 0, satellites: 2 },
-        { radius: 14, color: 0x4ecdc4, speed: 0.0006, inclination: Math.PI / 6, satellites: 3 },
-        { radius: 16, color: 0xffe66d, speed: 0.0005, inclination: -Math.PI / 8, satellites: 2 },
-        { radius: 18, color: 0x95e1d3, speed: 0.0004, inclination: Math.PI / 4, satellites: 2 }
-    ];
+    // Walker Constellation: 24/3/1 (24 satellites, 3 planes, phasing factor 1)
+    // Optimized for latitude coverage between 60°N and 60°S
+    const totalSatellites = 24;
+    const numPlanes = 3;
+    const satellitesPerPlane = totalSatellites / numPlanes; // 8 satellites per plane
+    const inclination = 60 * (Math.PI / 180); // 60 degrees inclination for ±60° latitude coverage
+    const orbitRadius = 14;
+    const orbitSpeed = 0.0006;
+    const phasingFactor = 1; // Phase offset between planes
+    
+    const colors = [0xff6b6b, 0x4ecdc4, 0xffe66d]; // One color per plane
 
-    orbitConfigs.forEach((config, orbitIndex) => {
+    for (let plane = 0; plane < numPlanes; plane++) {
+        // Calculate RAAN (Right Ascension of Ascending Node) for each plane
+        const raan = (plane * 2 * Math.PI) / numPlanes;
+        
+        // Create orbit line for this plane
         const orbitPoints = [];
         for (let i = 0; i <= 100; i++) {
             const angle = (i / 100) * Math.PI * 2;
-            const x = config.radius * Math.cos(angle);
-            const y = config.radius * Math.sin(angle) * Math.sin(config.inclination);
-            const z = config.radius * Math.sin(angle) * Math.cos(config.inclination);
+            
+            // Position in orbital plane
+            const xOrbit = orbitRadius * Math.cos(angle);
+            const yOrbit = orbitRadius * Math.sin(angle) * Math.sin(inclination);
+            const zOrbit = orbitRadius * Math.sin(angle) * Math.cos(inclination);
+            
+            // Rotate by RAAN to position the plane
+            const x = xOrbit * Math.cos(raan) - zOrbit * Math.sin(raan);
+            const y = yOrbit;
+            const z = xOrbit * Math.sin(raan) + zOrbit * Math.cos(raan);
+            
             orbitPoints.push(new THREE.Vector3(x, y, z));
         }
 
         const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
         const orbitMaterial = new THREE.LineBasicMaterial({
-            color: config.color,
+            color: colors[plane],
             transparent: true,
             opacity: 0.4
         });
@@ -133,27 +184,36 @@ function initHero3D() {
         earth.add(orbitLine);
         orbitLines.push({ line: orbitLine, baseOpacity: 0.4 });
 
-        for (let i = 0; i < config.satellites; i++) {
-            const satellite = createSatellite(config.color, 0.6);
+        // Place satellites evenly in this orbital plane
+        for (let sat = 0; sat < satellitesPerPlane; sat++) {
+            const satellite = createSatellite(colors[plane], 0.6);
+            
+            // Calculate initial angle with Walker constellation phasing
+            const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / totalSatellites;
+            const initialAngle = (sat * 2 * Math.PI) / satellitesPerPlane + phaseOffset;
+            
             satellite.userData = {
-                orbitRadius: config.radius,
-                speed: config.speed,
-                angle: (i * Math.PI * 2) / config.satellites + (orbitIndex * 0.5),
-                inclination: config.inclination,
-                orbitColor: config.color,
+                orbitRadius: orbitRadius,
+                speed: orbitSpeed,
+                angle: initialAngle,
+                inclination: inclination,
+                raan: raan, // Store RAAN for proper orbit calculation
+                orbitColor: colors[plane],
+                plane: plane,
                 isConfirming: false,
                 isReturning: false,
                 targetFire: null,
                 originalOrbit: {
-                    radius: config.radius,
-                    speed: config.speed,
-                    inclination: config.inclination
+                    radius: orbitRadius,
+                    speed: orbitSpeed,
+                    inclination: inclination,
+                    raan: raan
                 }
             };
             earth.add(satellite);
             satellites.push(satellite);
         }
-    });
+    }
 
     createFires();
     createStars();
@@ -203,6 +263,76 @@ function createEarthDetails() {
         const line = new THREE.Line(geometry, material);
         earth.add(line);
     }
+}
+
+function createEquator() {
+    // Create a bright equator line at y = 0 (relative to Earth center)
+    const equatorRadius = 10.02; // Just slightly above Earth surface to avoid z-fighting
+    const equatorPoints = [];
+    
+    for (let i = 0; i <= 100; i++) {
+        const angle = (i / 100) * Math.PI * 2;
+        const x = equatorRadius * Math.cos(angle);
+        const z = equatorRadius * Math.sin(angle);
+        equatorPoints.push(new THREE.Vector3(x, 0, z));
+    }
+    
+    const equatorGeometry = new THREE.BufferGeometry().setFromPoints(equatorPoints);
+    const equatorMaterial = new THREE.LineBasicMaterial({
+        color: 0xffff00, // Bright yellow for visibility
+        transparent: true,
+        opacity: 0.9,
+        linewidth: 3,
+        depthTest: true, // Enable depth testing so it doesn't show through Earth
+        depthWrite: true
+    });
+    
+    const equatorLine = new THREE.Line(equatorGeometry, equatorMaterial);
+    earth.add(equatorLine);
+    
+    // Add "EQUATOR" text labels at 0° and 180°
+    const labelPositions = [0, Math.PI]; // 0 degrees and 180 degrees
+    
+    labelPositions.forEach((angle) => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 512;
+        canvas.height = 128;
+        
+        // Draw text
+        context.fillStyle = 'rgba(255, 255, 0, 0.95)';
+        context.font = 'Bold 56px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText('EQUATOR', 256, 64);
+        
+        // Create texture from canvas
+        const texture = new THREE.CanvasTexture(canvas);
+        
+        // Create a plane geometry for the text
+        const textGeometry = new THREE.PlaneGeometry(3, 0.75);
+        const textMaterial = new THREE.MeshBasicMaterial({ 
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthTest: true,
+            depthWrite: true
+        });
+        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        
+        // Position the text above the equator line to avoid overlap
+        const labelRadius = 10.05;
+        textMesh.position.set(
+            labelRadius * Math.cos(angle),
+            0.5, // Position above the equator line
+            labelRadius * Math.sin(angle)
+        );
+        
+        // Rotate to be readable and tangent to the equator
+        textMesh.rotation.y = angle + Math.PI / 2; // Face outward and tangent to circle
+        
+        earth.add(textMesh);
+    });
 }
 
 function createFires() {
@@ -400,9 +530,15 @@ function animateHero() {
         // Satellites always stay in orbit
         data.angle += data.speed;
         
-        let x = data.orbitRadius * Math.cos(data.angle);
-        let y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-        let z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        // Position in orbital plane
+        let xOrbit = data.orbitRadius * Math.cos(data.angle);
+        let yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+        let zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        
+        // Apply RAAN rotation to position the plane correctly
+        const x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
+        const y = yOrbit;
+        const z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
         
         const newPos = new THREE.Vector3(x, y, z);
         
@@ -410,9 +546,9 @@ function animateHero() {
         if (checkSatelliteCollision(newPos, satellite)) {
             // Slow down slightly to create spacing
             data.angle -= data.speed * 0.5;
-            x = data.orbitRadius * Math.cos(data.angle);
-            y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-            z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+            xOrbit = data.orbitRadius * Math.cos(data.angle);
+            yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+            zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         }
         
         satellite.position.set(x, y, z);
@@ -510,6 +646,204 @@ function onHeroResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// ==================== SATELLITE 3D MODEL ====================
+let satelliteScene, satelliteCamera, satelliteRenderer, satelliteModel;
+
+function initSatellite3D() {
+    const container = document.getElementById('satelliteModel');
+    if (!container) return;
+
+    // Scene setup
+    satelliteScene = new THREE.Scene();
+    satelliteScene.background = null;
+
+    // Camera setup
+    satelliteCamera = new THREE.PerspectiveCamera(
+        45,
+        container.offsetWidth / container.offsetHeight,
+        0.1,
+        1000
+    );
+    satelliteCamera.position.set(5, 3, 5);
+    satelliteCamera.lookAt(0, 0, 0);
+
+    // Renderer setup
+    satelliteRenderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: true 
+    });
+    satelliteRenderer.setSize(container.offsetWidth, container.offsetHeight);
+    satelliteRenderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(satelliteRenderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    satelliteScene.add(ambientLight);
+
+    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight1.position.set(5, 5, 5);
+    satelliteScene.add(directionalLight1);
+
+    const directionalLight2 = new THREE.DirectionalLight(0x4ecdc4, 0.4);
+    directionalLight2.position.set(-5, -3, -5);
+    satelliteScene.add(directionalLight2);
+
+    // Create detailed satellite
+    satelliteModel = createDetailedSatellite();
+    satelliteScene.add(satelliteModel);
+
+    // Add stars background
+    createSatelliteStars();
+
+    // Animation
+    animateSatellite();
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+        if (!container) return;
+        satelliteCamera.aspect = container.offsetWidth / container.offsetHeight;
+        satelliteCamera.updateProjectionMatrix();
+        satelliteRenderer.setSize(container.offsetWidth, container.offsetHeight);
+    });
+}
+
+function createDetailedSatellite() {
+    const group = new THREE.Group();
+
+    // Main body
+    const bodyGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.8);
+    const bodyMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xcccccc,
+        shininess: 60
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    group.add(body);
+
+    // Antenna
+    const antennaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8);
+    const antennaMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x888888,
+        shininess: 80
+    });
+    const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
+    antenna.position.set(0, 1, 0);
+    group.add(antenna);
+
+    // Antenna dish
+    const dishGeometry = new THREE.CylinderGeometry(0.3, 0.2, 0.1, 16);
+    const dishMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xaaaaaa,
+        shininess: 100
+    });
+    const dish = new THREE.Mesh(dishGeometry, dishMaterial);
+    dish.position.set(0, 1.6, 0);
+    group.add(dish);
+
+    // Solar panels
+    const panelGeometry = new THREE.BoxGeometry(2.5, 0.05, 1.2);
+    const panelMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x1a4d8f,
+        shininess: 40,
+        emissive: 0x0a2545,
+        emissiveIntensity: 0.2
+    });
+    
+    const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    leftPanel.position.x = -2;
+    group.add(leftPanel);
+    
+    const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    rightPanel.position.x = 2;
+    group.add(rightPanel);
+
+    // Panel cells (details)
+    for (let side = -1; side <= 1; side += 2) {
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
+                const cellGeometry = new THREE.BoxGeometry(0.4, 0.06, 0.35);
+                const cellMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x2563a8,
+                    shininess: 60
+                });
+                const cell = new THREE.Mesh(cellGeometry, cellMaterial);
+                cell.position.set(
+                    side * 2 + (i - 2) * 0.45 * side,
+                    0,
+                    (j - 1) * 0.38
+                );
+                group.add(cell);
+            }
+        }
+    }
+
+    // Thermal camera/sensor
+    const sensorGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.3, 16);
+    const sensorMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x333333,
+        emissive: 0xff4444,
+        emissiveIntensity: 0.5,
+        shininess: 100
+    });
+    const sensor = new THREE.Mesh(sensorGeometry, sensorMaterial);
+    sensor.rotation.x = Math.PI / 2;
+    sensor.position.set(0, -0.4, -0.6);
+    group.add(sensor);
+
+    // Sensor lens
+    const lensGeometry = new THREE.CircleGeometry(0.12, 16);
+    const lensMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xff0000,
+        emissive: 0xff0000,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.9
+    });
+    const lens = new THREE.Mesh(lensGeometry, lensMaterial);
+    lens.position.set(0, -0.4, -0.76);
+    group.add(lens);
+
+    return group;
+}
+
+function createSatelliteStars() {
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsMaterial = new THREE.PointsMaterial({ 
+        color: 0xffffff, 
+        size: 0.05,
+        transparent: true,
+        opacity: 0.6
+    });
+
+    const starsVertices = [];
+    for (let i = 0; i < 500; i++) {
+        const x = (Math.random() - 0.5) * 50;
+        const y = (Math.random() - 0.5) * 50;
+        const z = (Math.random() - 0.5) * 50;
+        starsVertices.push(x, y, z);
+    }
+
+    starsGeometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(starsVertices, 3)
+    );
+
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    satelliteScene.add(stars);
+}
+
+function animateSatellite() {
+    requestAnimationFrame(animateSatellite);
+    
+    if (satelliteModel) {
+        satelliteModel.rotation.y += 0.005;
+        satelliteModel.rotation.x = Math.sin(Date.now() * 0.0003) * 0.1;
+    }
+    
+    if (satelliteRenderer && satelliteScene && satelliteCamera) {
+        satelliteRenderer.render(satelliteScene, satelliteCamera);
+    }
+}
+
 window.addEventListener('scroll', () => {
     updateActiveNavLink();
     fadeInOnScroll();
@@ -521,6 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (typeof THREE !== 'undefined') {
         initHero3D();
+        initSatellite3D();
     }
     
     const navLinks = document.querySelectorAll('.nav-menu a');

@@ -15,6 +15,11 @@
     </style>
     <link rel="stylesheet" href="css/main.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r159/three.min.js"></script>
+    <!-- ========== INLINE EARTH SCRIPT - COMMENTED OUT ========== -->
+    <!-- This inline script creates a simple bright blue Earth sphere (#0277ff / 0x0077ff) -->
+    <!-- It was creating a duplicate/placeholder Earth before main.js loads the detailed version -->
+    <!-- DARK AURA: The large light blue sphere you see is from this script below -->
+    <!--
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Scene setup
@@ -31,12 +36,31 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.querySelector('.hero-background').appendChild(renderer.domElement);
 
-            // Earth creation
+            // ========== EARTH CREATION ==========
+            // Main Earth sphere with bright blue color (#0277ff)
             const geometry = new THREE.SphereGeometry(8, 32, 32);
-            const material = new THREE.MeshBasicMaterial({ color: 0x0077ff });
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x0077ff  // Bright blue Earth color - THIS IS THE BLUE YOU SEE!
+            });
             const earth = new THREE.Mesh(geometry, material);
             earth.position.y = -25;
             scene.add(earth);
+
+            // ========== DARK AURA - ATMOSPHERIC EFFECT (OPTIONAL) ==========
+            // Uncomment this block to add a dark blue/purple atmospheric glow around Earth
+            // This creates the "dark aura" halo effect using BackSide rendering
+            
+            const atmosphereGeometry = new THREE.SphereGeometry(8.3, 32, 32);  // Slightly larger than Earth
+            const atmosphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4466bb,          // DARK AURA: Dark blue/purple atmospheric color
+                transparent: true,
+                opacity: 0.3,             // Semi-transparent for glow effect
+                side: THREE.BackSide      // DARK AURA: Renders inside faces to create outer glow
+            });
+            const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+            atmosphere.position.y = -25;
+            scene.add(atmosphere);
+            
 
             // Add some basic lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -58,6 +82,7 @@
             });
         });
     </script>
+    -->
 </head>
 <body>
     <!-- Navigation -->
@@ -131,6 +156,48 @@
                     <div class="placeholder-box">
                         <p>Business Model Visualization</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Satellite Section -->
+    <section id="satellite" class="section">
+        <div class="container">
+            <h2 class="section-title">FLARESat - Our Custom Satellite</h2>
+            <div class="satellite-content">
+                <div class="satellite-model" id="satelliteModel">
+                    <!-- 3D Model will be rendered here -->
+                </div>
+                <div class="satellite-info">
+                    <h3>Advanced Fire Detection Technology</h3>
+                    <p>
+                        FLARESat is our custom-designed satellite specifically engineered for 
+                        real-time wildfire detection and monitoring from Low Earth Orbit.
+                    </p>
+                    <div class="satellite-specs">
+                        <div class="spec-item">
+                            <h4>Detection Range</h4>
+                            <p>6km radius coverage</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Orbital Altitude</h4>
+                            <p>400-600km LEO</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Solar Panels</h4>
+                            <p>High-efficiency deployable arrays</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Communication</h4>
+                            <p>Real-time data transmission</p>
+                        </div>
+                    </div>
+                    <p class="satellite-description">
+                        Equipped with thermal imaging sensors and advanced AI algorithms, 
+                        FLARESat can detect fire signatures and coordinate with nearby 
+                        satellites for multi-point verification before alerting ground stations.
+                    </p>
                 </div>
             </div>
         </div>

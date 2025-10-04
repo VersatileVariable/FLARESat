@@ -317,6 +317,62 @@ body {
     font-style: italic;
 }
 
+/* ==================== SATELLITE SECTION ==================== */
+.satellite-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    margin-top: 3rem;
+}
+
+.satellite-model {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    height: 500px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+}
+
+.satellite-info h3 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.satellite-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.spec-item {
+    background: var(--light-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.spec-item h4 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.spec-item p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.satellite-description {
+    color: var(--text-light);
+    line-height: 1.8;
+    margin-top: 1.5rem;
+}
+
 /* ==================== FOOTER ==================== */
 .footer {
     background-color: var(--dark-bg);
@@ -344,6 +400,18 @@ body {
     .challenge-grid,
     .team-grid {
         grid-template-columns: 1fr;
+    }
+
+    .satellite-content {
+        grid-template-columns: 1fr;
+    }
+
+    .satellite-specs {
+        grid-template-columns: 1fr;
+    }
+
+    .satellite-model {
+        height: 400px;
     }
 
     .section {
