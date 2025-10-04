@@ -231,8 +231,11 @@ function initHero3D() {
         for (let sat = 0; sat < satellitesPerPlane; sat++) {
             const satellite = createSatellite(colors[plane], 0.1);
             
-            // Calculate initial angle with Walker constellation phasing
-            const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / totalSatellites;
+            // Calculate initial angle with Walker Delta constellation phasing
+            // Walker Delta phasing formula: satellites in adjacent planes offset by (f × 360°) / t
+            // This ensures satellites in plane N are shifted relative to plane N-1
+            // Creating a "staggered" pattern that prevents collisions at plane intersections
+            const phaseOffset = (phasingFactor * 2 * Math.PI * plane) / numPlanes;
             const initialAngle = (sat * 2 * Math.PI) / satellitesPerPlane + phaseOffset;
             
             satellite.userData = {
