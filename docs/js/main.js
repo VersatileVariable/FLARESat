@@ -72,8 +72,8 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, 0, 18);
-    camera.lookAt(0, -8, 0);
+    camera.position.set(0, -25, 12);
+    camera.lookAt(0, -25, 0);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -102,34 +102,12 @@ function initHero3D() {
     const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
     const earthMaterial = new THREE.MeshPhongMaterial({
         color: 0x4a90e2,
-        emissive: 0x1a3a5f,
-        shininess: 40,
+        emissive: 0x000000,
+        shininess: 60,
     });
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    earth.position.y = -10;
+    earth.position.y = -25;
     scene.add(earth);
-
-    const atmosphereGeometry = new THREE.SphereGeometry(10.4, 64, 64);
-    const atmosphereMaterial = new THREE.MeshBasicMaterial({
-        color: 0x667eea,
-        transparent: true,
-        opacity: 0.25,
-        side: THREE.BackSide
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.position.y = -10;
-    scene.add(atmosphere);
-
-    const outerGlowGeometry = new THREE.SphereGeometry(11, 64, 64);
-    const outerGlowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x667eea,
-        transparent: true,
-        opacity: 0.1,
-        side: THREE.BackSide
-    });
-    const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
-    outerGlow.position.y = -10;
-    scene.add(outerGlow);
 
     createEarthDetails();
 

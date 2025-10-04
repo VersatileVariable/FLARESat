@@ -26,6 +26,7 @@ body {
     line-height: 1.6;
     color: var(--text-dark);
     background-color: var(--white);
+    overflow-x: hidden;
 }
 
 .container {
@@ -36,10 +37,13 @@ body {
 
 /* ==================== NAVIGATION ==================== */
 .navbar {
-    background-color: var(--white);
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     box-shadow: var(--shadow);
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
 }
 
@@ -81,13 +85,10 @@ body {
 /* ==================== HERO SECTION ==================== */
 .hero {
     position: relative;
-    min-height: 90vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2rem;
+    width: 100%;
+    height: 100vh;
     overflow: hidden;
+    background: #000000;
 }
 
 .hero-background {
@@ -96,59 +97,27 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    opacity: 0.1;
-    z-index: -1;
-}
-
-.hero-content {
-    max-width: 800px;
     z-index: 1;
 }
 
-.hero-title {
-    font-size: 3.5rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.hero-background canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
-.hero-subtitle {
-    font-size: 1.5rem;
-    color: var(--text-light);
-    margin-bottom: 1rem;
-}
-
-.hero-description {
-    font-size: 1.25rem;
-    color: var(--text-dark);
-    margin-bottom: 2rem;
-}
-
-.cta-button {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: var(--white);
-    border: none;
-    padding: 1rem 2.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: var(--shadow);
-}
-
-.cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+.hero-background canvas {
+    display: block;
 }
 
 /* ==================== SECTIONS ==================== */
 .section {
     padding: 5rem 0;
+    position: relative;
+    z-index: 10;
+    background-color: var(--white);
 }
 
 .section-alt {
@@ -366,14 +335,6 @@ body {
     .nav-menu {
         gap: 1rem;
         font-size: 0.9rem;
-    }
-
-    .hero-title {
-        font-size: 2.5rem;
-    }
-
-    .hero-subtitle {
-        font-size: 1.2rem;
     }
 
     .solution-content {

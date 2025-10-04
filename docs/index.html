@@ -5,7 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="NASA Space Apps Challenge 2025 - Commercializing Low Earth Orbit">
     <title>LEO Business Challenge | NASA Space Apps 2025</title>
+    <style>
+        body { margin: 0; }
+        .hero-background {
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+        }
+    </style>
     <link rel="stylesheet" href="css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r159/three.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Scene setup
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, -25, 16);
+            camera.lookAt(0, -25, 0);
+
+            // Renderer setup
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.querySelector('.hero-background').appendChild(renderer.domElement);
+
+            // Earth creation
+            const geometry = new THREE.SphereGeometry(8, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0x0077ff });
+            const earth = new THREE.Mesh(geometry, material);
+            earth.position.y = -25;
+            scene.add(earth);
+
+            // Add some basic lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+                earth.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        });
+    </script>
 </head>
 <body>
     <!-- Navigation -->
