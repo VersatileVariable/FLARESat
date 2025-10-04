@@ -113,12 +113,13 @@ function initHero3D() {
     earth.rotation.z = Math.PI / 2; // Rotate 90 degrees so poles are on X axis
     scene.add(earth);
     
-    // Load Earth texture from Wikimedia Commons
+    // Load Earth texture - using reliable CDN source
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous'); // Enable CORS
     
     textureLoader.load(
-        'https://upload.wikimedia.org/wikipedia/commons/0/04/Solarsystemscope_texture_8k_earth_daymap.jpg',
+        // Using simple two-color Earth map (blue ocean, green/brown land)
+        'https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg',
         // Success callback - apply texture and extract pixel data for land detection
         (texture) => {
             console.log('Earth texture loaded successfully!');
@@ -461,12 +462,16 @@ function createEquator() {
 
 function createFires() {
     // Spawn more initial fires for better visual impact
-    // Add delay to ensure texture is loaded first
+    // Wait longer to ensure texture is fully loaded and processed
     setTimeout(() => {
+        console.log('Starting initial fire spawn. Texture loaded:', earthTextureLoaded);
+        if (!earthTextureLoaded) {
+            console.error('WARNING: Texture still not loaded after 3 seconds!');
+        }
         for (let i = 0; i < 30; i++) {
             spawnRandomFire();
         }
-    }, 1000);
+    }, 3000); // Increased to 3 seconds to ensure texture is ready
 }
 
 function createWeatherClouds() {
@@ -555,7 +560,8 @@ function spawnWeatherCloud() {
 // Helper function to check if a lat/lon coordinate is on land
 function isOnLand(lat, lon) {
     if (!earthTextureLoaded || !earthTextureData) {
-        return true; // If texture not loaded, allow fires anywhere
+        console.warn('Texture not loaded yet! earthTextureLoaded:', earthTextureLoaded, 'earthTextureData:', !!earthTextureData);
+        return false; // CHANGED: Don't allow fires if texture isn't loaded yet
     }
     
     // Convert lat/lon to texture UV coordinates
@@ -568,7 +574,7 @@ function isOnLand(lat, lon) {
     const x = Math.floor(u * earthTextureData.width);
     const y = Math.floor(v * earthTextureData.height);
     
-    // Helper function to check if a pixel is water (REJECT HIGH BLUE VALUES)
+    // Helper function to check if a pixel is water (PRECISE COLOR MATCHING)
     const isWaterAtPixel = (px, py) => {
         // Boundary check
         if (px < 0 || px >= earthTextureData.width || py < 0 || py >= earthTextureData.height) {
@@ -580,17 +586,13 @@ function isOnLand(lat, lon) {
         const pg = earthTextureData.data[idx + 1];
         const pb = earthTextureData.data[idx + 2];
         
-        // Reject if blue value is above 80 - this eliminates all ocean areas
-        if (pb > 80) {
-            return true;
+        // Check for ocean color #006099 (RGB: 0, 96, 153)
+        // Allow small tolerance: R≤5, G=90-102, B=145-160
+        if (pr <= 5 && pg >= 90 && pg <= 102 && pb >= 145 && pb <= 160) {
+            return true; // Matches ocean color #006099
         }
         
-        // Reject if blue is the dominant color
-        if (pb >= pr || pb >= pg) {
-            return true;
-        }
-        
-        // It's land only if blue is low AND weakest
+        // Not ocean
         return false;
     };
     
@@ -600,14 +602,10 @@ function isOnLand(lat, lon) {
     const g = earthTextureData.data[index + 1];
     const b = earthTextureData.data[index + 2];
     
-    // Reject if blue value is above 80 - eliminates all ocean areas
-    if (b > 80) {
-        return false;
-    }
-    
-    // Reject if blue is the dominant color
-    if (b >= r || b >= g) {
-        return false;
+    // Check for ocean color #006099 (RGB: 0, 96, 153)
+    // Allow small tolerance: R≤5, G=90-102, B=145-160
+    if (r <= 5 && g >= 90 && g <= 102 && b >= 145 && b <= 160) {
+        return false; // Matches ocean color #006099
     }
     
     // Check buffer zone: sample pixels in a larger grid around the point
