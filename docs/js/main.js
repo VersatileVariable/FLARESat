@@ -74,7 +74,7 @@ function initHero3D() {
         0.1,
         1000
     );
-    camera.position.set(0, 0, 30);
+    camera.position.set(0, 0, 20);
     camera.lookAt(0, -25, 0);
 
     renderer = new THREE.WebGLRenderer({ 
@@ -142,6 +142,7 @@ function initHero3D() {
                 inclination: config.inclination,
                 orbitColor: config.color,
                 isConfirming: false,
+                isReturning: false,
                 targetFire: null,
                 originalOrbit: {
                     radius: config.radius,
@@ -354,15 +355,29 @@ function setupHeroMouseControls() {
         isDragging = false;
     });
     
-    // Add mouse wheel support for Z-axis rotation
+    // Track if mouse is over canvas
+    let isMouseOverCanvas = false;
+    
+    canvas.addEventListener('mouseenter', () => {
+        isMouseOverCanvas = true;
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+        isMouseOverCanvas = false;
+    });
+    
+    // Add mouse wheel support for Z-axis rotation only when hovering over canvas
     canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        autoRotate = false;
-        earth.rotation.z += e.deltaY * 0.001;
-        
-        // Resume auto-rotate after 2 seconds of no interaction
-        clearTimeout(canvas.wheelTimeout);
-        canvas.wheelTimeout = setTimeout(() => { autoRotate = true; }, 2000);
+        if (isMouseOverCanvas) {
+            e.preventDefault();
+            autoRotate = false;
+            earth.rotation.z += e.deltaY * 0.001;
+            
+            // Resume auto-rotate after 2 seconds of no interaction
+            clearTimeout(canvas.wheelTimeout);
+            canvas.wheelTimeout = setTimeout(() => { autoRotate = true; }, 2000);
+        }
+        // If not hovering over canvas, allow normal page scroll (don't preventDefault)
     }, { passive: false });
 }
 
@@ -382,72 +397,29 @@ function animateHero() {
     satellites.forEach(satellite => {
         const data = satellite.userData;
         
-        if (data.isConfirming && data.targetFire) {
-            // Calculate 45-degree offset position for viewing
-            const fireDir = data.targetFire.position.clone().normalize();
-            
-            // Create two perpendicular vectors for 45-degree offset positions
-            const up = new THREE.Vector3(0, 1, 0);
-            const perpendicular1 = new THREE.Vector3().crossVectors(fireDir, up).normalize();
-            const perpendicular2 = new THREE.Vector3().crossVectors(fireDir, perpendicular1).normalize();
-            
-            // Determine which satellite gets which offset (to separate them)
-            const satelliteIndex = data.targetFire.confirmedBy.indexOf(satellite);
-            const angleOffset = satelliteIndex === 0 ? 5 : -5; // One goes left, one goes right
-            const radians = angleOffset * (Math.PI / 180);
-            
-            // Calculate offset position at 45 degrees
-            const offsetDir = fireDir.clone()
-                .multiplyScalar(Math.cos(radians))
-                .add(perpendicular1.clone().multiplyScalar(Math.sin(radians)));
-            
-            const targetPos = offsetDir.normalize().multiplyScalar(12); // Slightly further out
-            const newPos = satellite.position.clone().lerp(targetPos, 0.02);
-            
-            satellite.position.copy(newPos);
-            
-            // Create detection line
-            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-                satellite.position.clone(),
-                data.targetFire.position.clone()
-            ]);
-            const lineMaterial = new THREE.LineBasicMaterial({
-                color: data.orbitColor,
-                transparent: true,
-                opacity: 0.8,
-                linewidth: 2
-            });
-            const line = new THREE.Line(lineGeometry, lineMaterial);
-            earth.add(line);
-            detectionLines.push(line);
-        } else {
-            // Normal orbit
-            data.angle += data.speed;
-            
-            let x = data.orbitRadius * Math.cos(data.angle);
-            let y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-            let z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
-            
-            const newPos = new THREE.Vector3(x, y, z);
-            
-            // Check collision and adjust if needed
-            if (checkSatelliteCollision(newPos, satellite)) {
-                // Slow down slightly to create spacing
-                data.angle -= data.speed * 0.5;
-                x = data.orbitRadius * Math.cos(data.angle);
-                y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-                z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
-            }
-            
-            satellite.position.set(x, y, z);
+        // Satellites always stay in orbit
+        data.angle += data.speed;
+        
+        let x = data.orbitRadius * Math.cos(data.angle);
+        let y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+        let z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        
+        const newPos = new THREE.Vector3(x, y, z);
+        
+        // Check collision and adjust if needed
+        if (checkSatelliteCollision(newPos, satellite)) {
+            // Slow down slightly to create spacing
+            data.angle -= data.speed * 0.5;
+            x = data.orbitRadius * Math.cos(data.angle);
+            y = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+            z = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         }
         
+        satellite.position.set(x, y, z);
         satellite.lookAt(0, 0, 0);
         
-        // Check for fire detection
-        if (!data.isConfirming) {
-            checkFireDetection(satellite);
-        }
+        // Check for fire detection and draw line of sight
+        checkFireDetection(satellite);
     });
 
     orbitLines.forEach((orbitData, index) => {
@@ -496,77 +468,39 @@ function checkSatelliteCollision(newPos, currentSatellite) {
 }
 
 function checkFireDetection(satellite) {
+    const detectionRadius = 6; // Satellites must be within 6 units to detect fire
+    
     fires.forEach(fire => {
-        if (fire.detected || fire.life > fire.maxLife) return;
+        if (fire.life > fire.maxLife) return;
         
-        // Get satellite world position
-        const satWorldPos = new THREE.Vector3();
-        satellite.getWorldPosition(satWorldPos);
+        // Calculate distance in local coordinates (relative to Earth)
+        const distance = satellite.position.distanceTo(fire.position);
         
-        // Get fire world position
-        const fireWorldPos = new THREE.Vector3();
-        fire.marker.getWorldPosition(fireWorldPos);
-        
-        // Calculate distance
-        const distance = satWorldPos.distanceTo(fireWorldPos);
-        
-        // Detection range
-        if (distance < 8) {
-            fire.detected = true;
-            console.log('Fire detected! Sending confirmation satellites...');
+        // Show line of sight if satellite can see the fire
+        if (distance < detectionRadius) {
+            // Mark fire as detected if not already
+            if (!fire.detected) {
+                fire.detected = true;
+                console.log(`Fire detected at distance ${distance.toFixed(2)}!`);
+                // Increase satellite glow when detecting
+                satellite.children[0].material.emissiveIntensity = 0.6;
+            }
             
-            // Create detection line
+            // Create line of sight
             const lineGeometry = new THREE.BufferGeometry().setFromPoints([
                 satellite.position.clone(),
                 fire.position.clone()
             ]);
             const lineMaterial = new THREE.LineBasicMaterial({
-                color: 0x00ff00,
+                color: satellite.userData.orbitColor,
                 transparent: true,
-                opacity: 0.9,
-                linewidth: 3
+                opacity: 0.7,
+                linewidth: 2
             });
             const line = new THREE.Line(lineGeometry, lineMaterial);
             earth.add(line);
             detectionLines.push(line);
-            
-            // Send 2 nearest satellites to confirm
-            sendConfirmationSatellites(fire, satellite);
         }
-    });
-}
-
-function sendConfirmationSatellites(fire, detectingSatellite) {
-    // Find 2 nearest satellites that aren't already confirming
-    const availableSatellites = satellites
-        .filter(sat => !sat.userData.isConfirming && sat !== detectingSatellite)
-        .map(sat => {
-            const satWorldPos = new THREE.Vector3();
-            sat.getWorldPosition(satWorldPos);
-            const fireWorldPos = new THREE.Vector3();
-            fire.marker.getWorldPosition(fireWorldPos);
-            return {
-                satellite: sat,
-                distance: satWorldPos.distanceTo(fireWorldPos)
-            };
-        })
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 2);
-    
-    availableSatellites.forEach(({ satellite }) => {
-        satellite.userData.isConfirming = true;
-        satellite.userData.targetFire = fire;
-        fire.confirmedBy.push(satellite);
-        
-        // Change satellite color to indicate confirmation mode
-        satellite.children[0].material.emissiveIntensity = 0.8;
-        
-        // After 5 seconds, return to normal orbit
-        setTimeout(() => {
-            satellite.userData.isConfirming = false;
-            satellite.userData.targetFire = null;
-            satellite.children[0].material.emissiveIntensity = 0.3;
-        }, 5000);
     });
 }
 
