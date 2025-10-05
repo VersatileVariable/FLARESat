@@ -57,6 +57,7 @@ function initFadeAnimations() {
 let scene, camera, renderer, earth, satellites = [], orbitLines = [];
 let fires = [];
 let detectionLines = [];
+let satelliteLinks = []; // Array to store inter-satellite link lines
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let autoRotate = true;
@@ -64,6 +65,13 @@ let confirmatingSatellites = [];
 let weatherClouds = [];
 let earthTextureData = null; // Store texture pixel data for land detection
 let earthTextureLoaded = false;
+
+// Configuration for inter-satellite links
+const ENABLE_SAT_LINKS = true; // Toggle satellite links on/off
+const SAT_LINK_DISTANCE = 3.5; // Maximum distance for satellite links (in scene units) - more lenient
+const SAT_LINK_COLOR = 0x4ecdc4; // Cyan color for links
+const SAT_LINK_OPACITY = 0.3; // Semi-transparent links
+const MAX_LINKS_PER_SAT = 3; // Maximum 2-3 links per satellite, judged by distance
 
 function initHero3D() {
     const container = document.querySelector('.hero-background');
@@ -111,6 +119,7 @@ function initHero3D() {
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
     earth.position.y = -30;
     earth.rotation.z = Math.PI / 2; // Rotate 90 degrees so poles are on X axis
+    earth.rotation.y = Math.PI / 3; // Rotate 60 degrees along equator (60° = π/3 radians)
     scene.add(earth);
     
     // Load Earth texture - using reliable CDN source
@@ -196,10 +205,10 @@ function initHero3D() {
     createEarthDetails();
     createEquator();
 
-    // ========== WALKER DELTA CONSTELLATION: 56°:250/20/1 ==========
+    // ========== WALKER DELTA CONSTELLATION: 56°:1000/20/1 ==========
     // Based on Walker Delta pattern notation i:t/p/f (similar to Galileo navigation system):
     // i = 56° inclination (tilt of orbital plane relative to Earth's equator)
-    // t = 250 total satellites
+    // t = 1000 total satellites
     // p = 20 orbital planes  
     // f = 1 phasing factor (relative shift of satellites in adjacent planes)
     //
@@ -211,7 +220,7 @@ function initHero3D() {
     // • Each plane rotated around Earth's Z-axis by angle of 2π/p (360°/20 = 18°)
     //
     // Key Features:
-    // • 250 Satellites Total - 12.5 satellites evenly distributed in each of the 20 orbital planes
+    // • 1000 Satellites Total - 50 satellites evenly distributed in each of the 20 orbital planes
     // • 20 Orbital Planes - Each plane separated by 18° RAAN (Right Ascension of Ascending Node)
     // • 56° Inclination - Common angle for LEO constellations, provides good global coverage
     //   while avoiding polar regions (similar to Galileo's 56°:24/3/1 configuration)
@@ -233,9 +242,9 @@ function initHero3D() {
     // ✓ Optimal for global fire detection with rapid revisit times
     // ✓ Highly scalable design following established satellite navigation patterns
     
-    const totalSatellites = 250;
+    const totalSatellites = 1000;
     const numPlanes = 20;
-    const satellitesPerPlane = totalSatellites / numPlanes; // 12.5 satellites per plane
+    const satellitesPerPlane = totalSatellites / numPlanes; // 50 satellites per plane
     const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
     const orbitRadius = 14; // ~500-550 km altitude
     const orbitSpeed = 0.0003; // Slower orbital speed (was 0.0006)
@@ -488,10 +497,14 @@ function spawnWeatherCloud() {
         earth.remove(oldCloud.mesh);
     }
 
-    // Random position on Earth surface
+    // OPTIMIZATION: Only spawn clouds on visible (front) hemisphere
     const maxLatitude = 70 * (Math.PI / 180); // Weather clouds can appear up to ±70°
     const lat = (Math.random() - 0.5) * 2 * maxLatitude;
-    const lon = Math.random() * Math.PI * 2;
+    
+    // Restrict longitude to front-facing hemisphere: -90° to +90°
+    const minLon = -Math.PI / 2;
+    const maxLon = Math.PI / 2;
+    const lon = minLon + Math.random() * (maxLon - minLon);
     const radius = 10.5; // Higher in atmosphere (was 10.15)
     
     // Create low-poly cloud using multiple overlapping icosahedrons
@@ -654,6 +667,11 @@ function spawnRandomFire() {
     // Restrict fires to ±56° latitude (matching 56° Walker Delta constellation coverage)
     const maxLatitude = 56 * (Math.PI / 180); // 56 degrees in radians (matches inclination)
     
+    // OPTIMIZATION: Only spawn fires on visible (front) hemisphere
+    // Restrict longitude to front-facing hemisphere: -90° to +90° (or -π/2 to +π/2)
+    const minLon = -Math.PI / 2;
+    const maxLon = Math.PI / 2;
+    
     // Try up to 200 times to find a land location (increased from 50)
     let lat, lon;
     let attempts = 0;
@@ -661,7 +679,7 @@ function spawnRandomFire() {
     
     while (attempts < 200 && !foundLand) {
         lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
-        lon = Math.random() * Math.PI * 2;
+        lon = minLon + Math.random() * (maxLon - minLon); // Only front hemisphere
         
         if (isOnLand(lat, lon)) {
             foundLand = true;
@@ -822,56 +840,129 @@ function setupHeroMouseControls() {
     // This ensures smooth page navigation without interference from the 3D model
 }
 
+// ========== INTER-SATELLITE LINKS ==========
+// Draws connecting lines between satellites that are close enough to communicate
+// This visualizes the mesh network that allows satellites to relay data
+function drawSatelliteLinks() {
+    // Track how many links each satellite has to limit connections
+    const linkCounts = new Map();
+    const potentialLinks = [];
+    
+    // First pass: find all potential links and calculate distances
+    for (let i = 0; i < satellites.length; i++) {
+        const sat1 = satellites[i];
+        
+        // OPTIMIZATION: Skip satellites on back hemisphere
+        if (!sat1.visible) continue;
+        
+        linkCounts.set(i, 0);
+        
+        for (let j = i + 1; j < satellites.length; j++) {
+            const sat2 = satellites[j];
+            
+            // OPTIMIZATION: Skip if second satellite is not visible
+            if (!sat2.visible) continue;
+            
+            // Calculate distance between satellites
+            const distance = sat1.position.distanceTo(sat2.position);
+            
+            // More lenient distance check - allow connections within range
+            if (distance <= SAT_LINK_DISTANCE) {
+                // Store all potential links within range
+                // Distance-based priority will naturally favor closest satellites
+                potentialLinks.push({ i, j, distance, sat1, sat2 });
+            }
+        }
+    }
+    
+    // Sort by distance (closest first) to prioritize nearest neighbors
+    potentialLinks.sort((a, b) => a.distance - b.distance);
+    
+    // Second pass: draw links, respecting the max links per satellite limit
+    for (const link of potentialLinks) {
+        const { i, j, distance, sat1, sat2 } = link;
+        
+        // Check if either satellite has reached its link limit
+        if (linkCounts.get(i) >= MAX_LINKS_PER_SAT || linkCounts.get(j) >= MAX_LINKS_PER_SAT) {
+            continue;
+        }
+        
+        // Draw the link
+        // Create line geometry connecting the two satellites
+        const linkGeometry = new THREE.BufferGeometry().setFromPoints([
+            sat1.position.clone(),
+            sat2.position.clone()
+        ]);
+        
+        // Create semi-transparent cyan line material
+        const linkMaterial = new THREE.LineBasicMaterial({
+            color: SAT_LINK_COLOR,
+            transparent: true,
+            opacity: SAT_LINK_OPACITY * (1 - distance / SAT_LINK_DISTANCE), // Fade based on distance
+            linewidth: 1
+        });
+        
+        const linkLine = new THREE.Line(linkGeometry, linkMaterial);
+        earth.add(linkLine);
+        satelliteLinks.push(linkLine);
+        
+        // Increment link count for both satellites
+        linkCounts.set(i, linkCounts.get(i) + 1);
+        if (!linkCounts.has(j)) linkCounts.set(j, 0);
+        linkCounts.set(j, linkCounts.get(j) + 1);
+    }
+}
+
 function animateHero() {
     requestAnimationFrame(animateHero);
 
     const time = Date.now();
 
-    // Automatic rotation only - no manual control
-    earth.rotation.x += 0.0002; // Slower rotation around X-axis (along equator line)
+    // Earth is now stationary - no rotation
+    // earth.rotation.x += 0.0002; // Rotation disabled
 
     // Clear old detection lines
     detectionLines.forEach(line => earth.remove(line));
     detectionLines = [];
+    
+    // Clear old satellite link lines
+    satelliteLinks.forEach(link => earth.remove(link));
+    satelliteLinks = [];
 
     satellites.forEach(satellite => {
         const data = satellite.userData;
-        
-        // Calculate next position
-        const nextAngle = data.angle + data.speed;
-        
-        // Position in orbital plane with next angle
-        let xOrbit = data.orbitRadius * Math.cos(nextAngle);
-        let yOrbit = data.orbitRadius * Math.sin(nextAngle) * Math.sin(data.inclination);
-        let zOrbit = data.orbitRadius * Math.sin(nextAngle) * Math.cos(data.inclination);
-        
-        // Apply RAAN rotation to position the plane correctly
-        let x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
-        let y = yOrbit;
-        let z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
-        
-        // Walker Delta constellation design ensures natural separation
-        // Satellites maintain constant spacing through proper phasing
         
         // Update orbital position
         data.angle += data.speed;
         
         // Calculate position in orbital plane
-        xOrbit = data.orbitRadius * Math.cos(data.angle);
-        yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
-        zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
+        let xOrbit = data.orbitRadius * Math.cos(data.angle);
+        let yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
+        let zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         
         // Apply RAAN rotation
-        x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
-        y = yOrbit;
-        z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
+        let x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
+        let y = yOrbit;
+        let z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
         
         satellite.position.set(x, y, z);
         satellite.lookAt(0, 0, 0);
         
-        // Check for fire detection and draw line of sight
-        checkFireDetection(satellite);
+        // OPTIMIZATION: Only show satellites on visible (top) hemisphere
+        // Check if satellite is on the camera-facing side (z > -2 for visible hemisphere)
+        const isVisible = z > -2;
+        satellite.visible = isVisible;
+        
+        // Only check for fire detection if satellite is visible
+        if (isVisible) {
+            checkFireDetection(satellite);
+        }
     });
+    
+    // Draw inter-satellite links (mesh network visualization)
+    if (ENABLE_SAT_LINKS) {
+        drawSatelliteLinks();
+    }
 
     orbitLines.forEach((orbitData, index) => {
         const pulse = Math.sin(time * 0.001 + index) * 0.2 + 0.8;
