@@ -1408,9 +1408,30 @@ function initSatellite3D() {
     directionalLight2.position.set(-5, -3, -5);
     satelliteScene.add(directionalLight2);
 
-    // Create detailed satellite
-    satelliteModel = createDetailedSatellite();
-    satelliteScene.add(satelliteModel);
+    // Load GLB model
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+        'assets/FinalSatPres.glb',
+        function(gltf) {
+            satelliteModel = gltf.scene;
+            
+            // Scale and position the model if needed
+            satelliteModel.scale.set(1, 1, 1);
+            satelliteModel.position.set(0, 0, 0);
+            
+            satelliteScene.add(satelliteModel);
+            console.log('Satellite model loaded successfully');
+        },
+        function(xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        function(error) {
+            console.error('Error loading satellite model:', error);
+            // Fallback to procedural model
+            satelliteModel = createDetailedSatellite();
+            satelliteScene.add(satelliteModel);
+        }
+    );
 
     // Add stars background
     createSatelliteStars();
