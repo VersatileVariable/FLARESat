@@ -1,0 +1,144 @@
+/* Fire burn-away effect */
+.burn-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.burn-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.burn-overlay.active {
+    opacity: 1;
+}
+
+.flame-particle {
+    position: absolute;
+    width: 200px;
+    height: 250px;
+    background-image: url('https://static.vecteezy.com/system/resources/thumbnails/010/366/199/small_2x/fire-frame-loop-effect-burning-background-with-fire-abstract-background-seamless-loop-fire-burn-flame-energy-4k-free-video.jpg');
+    background-size: cover;
+    background-position: center;
+    transform: rotate(0deg);
+    animation: flameRise 2s ease-out forwards, flameFlicker 0.15s ease-in-out infinite;
+    filter: brightness(1.2) contrast(1.3);
+    box-shadow: 
+        0 0 80px rgba(255, 170, 0, 0.9),
+        0 0 120px rgba(255, 100, 0, 0.7),
+        0 0 160px rgba(255, 0, 0, 0.5);
+    mix-blend-mode: screen;
+    opacity: 0.95;
+}
+
+@keyframes flameRise {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1) scaleY(1);
+        opacity: 0.95;
+        filter: brightness(1.2) contrast(1.3) hue-rotate(0deg);
+    }
+    50% {
+        transform: translateY(-75vh) rotate(5deg) scale(1.3) scaleY(1.5);
+        opacity: 0.8;
+        filter: brightness(1.4) contrast(1.4) hue-rotate(5deg);
+    }
+    100% {
+        transform: translateY(-150vh) rotate(10deg) scale(0.5) scaleY(2);
+        opacity: 0;
+        filter: brightness(1) contrast(1) hue-rotate(10deg);
+    }
+}
+
+@keyframes flameFlicker {
+    0%, 100% { 
+        transform: scaleX(1) scaleY(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scaleX(0.95) scaleY(1.05);
+        opacity: 0.95;
+    }
+}
+
+.ember-particle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle, #ffaa00 0%, #ff6600 50%, #ff0000 100%);
+    border-radius: 50%;
+    animation: emberFloat 2.5s ease-out forwards, emberGlow 0.3s ease-in-out infinite;
+    box-shadow: 
+        0 0 20px rgba(255, 100, 0, 1),
+        0 0 40px rgba(255, 50, 0, 0.6);
+}
+
+@keyframes emberFloat {
+    0% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-60vh) translateX(var(--drift)) scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-120vh) translateX(calc(var(--drift) * 1.5)) scale(0.5);
+        opacity: 0;
+    }
+}
+
+@keyframes emberGlow {
+    0%, 100% { 
+        filter: brightness(1);
+        transform: scale(1);
+    }
+    50% { 
+        filter: brightness(1.3);
+        transform: scale(1.1);
+    }
+}
+
+/* Dramatic fade-in animations */
+.hero-content h1 {
+    animation: fadeInUp 1s ease-out;
+}
+
+.hero-content p {
+    animation: fadeInUp 1.2s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulse effect for emphasis */
+.pulse-text {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Flicker animation for fire emoji */
+@keyframes flicker {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    25% { opacity: 0.9; transform: scale(1.05); }
+    50% { opacity: 0.95; transform: scale(0.98); }
+    75% { opacity: 0.92; transform: scale(1.03); }
+}

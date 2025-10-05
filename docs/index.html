@@ -6,7 +6,7 @@
     <meta name="description" content="NASA Space Apps Challenge 2025 - Commercializing Low Earth Orbit">
     <title>LEO Business Challenge | NASA Space Apps 2025</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; overflow-x: hidden; }
         .hero-background {
             width: 100%;
             height: 100vh;
@@ -14,7 +14,13 @@
         }
     </style>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/fire-effects.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r159/three.min.js"></script>
+    <!-- ========== INLINE EARTH SCRIPT - COMMENTED OUT ========== -->
+    <!-- This inline script creates a simple bright blue Earth sphere (#0277ff / 0x0077ff) -->
+    <!-- It was creating a duplicate/placeholder Earth before main.js loads the detailed version -->
+    <!-- DARK AURA: The large light blue sphere you see is from this script below -->
+    <!--
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Scene setup
@@ -31,12 +37,31 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.querySelector('.hero-background').appendChild(renderer.domElement);
 
-            // Earth creation
+            // ========== EARTH CREATION ==========
+            // Main Earth sphere with bright blue color (#0277ff)
             const geometry = new THREE.SphereGeometry(8, 32, 32);
-            const material = new THREE.MeshBasicMaterial({ color: 0x0077ff });
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x0077ff  // Bright blue Earth color - THIS IS THE BLUE YOU SEE!
+            });
             const earth = new THREE.Mesh(geometry, material);
             earth.position.y = -25;
             scene.add(earth);
+
+            // ========== DARK AURA - ATMOSPHERIC EFFECT (OPTIONAL) ==========
+            // Uncomment this block to add a dark blue/purple atmospheric glow around Earth
+            // This creates the "dark aura" halo effect using BackSide rendering
+            
+            const atmosphereGeometry = new THREE.SphereGeometry(8.3, 32, 32);  // Slightly larger than Earth
+            const atmosphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4466bb,          // DARK AURA: Dark blue/purple atmospheric color
+                transparent: true,
+                opacity: 0.3,             // Semi-transparent for glow effect
+                side: THREE.BackSide      // DARK AURA: Renders inside faces to create outer glow
+            });
+            const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+            atmosphere.position.y = -25;
+            scene.add(atmosphere);
+            
 
             // Add some basic lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -58,6 +83,7 @@
             });
         });
     </script>
+    -->
 </head>
 <body>
     <!-- Navigation -->
@@ -74,35 +100,132 @@
         </div>
     </nav>
 
-    <!-- Hero Section with 3D Earth -->
-    <section id="home" class="hero">
-        <div class="hero-background"></div>
+    <!-- Burn Overlay for Fire Effect -->
+    <div class="burn-overlay" id="burnOverlay"></div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero burn-container" style="background: linear-gradient(135deg, #ff6b00 0%, #ff0000 50%, #000000 100%); min-height: 90vh; display: flex; align-items: center; justify-content: center; position: relative;">
+        <div class="hero-content" style="text-align: center; padding: 4rem 2rem; position: relative; z-index: 2;">
+            <h1 style="font-size: 4.5rem; margin-bottom: 1rem; color: #ffffff; text-shadow: 0 0 20px rgba(255, 100, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6); font-weight: 900; letter-spacing: 2px;">
+                FLARESat
+            </h1>
+            <p style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffaa00; font-weight: 700; text-shadow: 0 0 10px rgba(255, 100, 0, 0.6);">
+                Every Second Counts
+            </p>
+            <p style="font-size: 1.3rem; margin-bottom: 0; color: #ffffff; opacity: 0.95; line-height: 1.6; max-width: 800px; margin-left: auto; margin-right: auto;">
+                <span class="pulse-text" style="font-weight: 700; color: #ffaa00;">Wildfires don't wait.</span> By the time you see the smoke, it's already too late.
+            </p>
+            <p style="font-size: 1.1rem; margin-top: 1rem; color: #ffffff; opacity: 0.9;">
+                FLARESat detects fires from space in <strong style="color: #ffaa00;">15 minutes</strong>—before they become catastrophes.
+            </p>
+        </div>
+        
+        <!-- Animated flames at bottom of hero -->
+        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(255, 100, 0, 0.1) 100%); z-index: 1;"></div>
+    </section>
+    
+    <!-- Fire Transition Container -->
+    <section id="fireTransition" style="background: linear-gradient(to bottom, #000000, #1a0000); min-height: 40vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; padding: 3rem 2rem; position: relative; z-index: 2;">
+            <h2 style="font-size: 3rem; color: #ff6b00; font-weight: 900; text-shadow: 0 0 30px rgba(255, 100, 0, 0.8), 0 0 60px rgba(255, 0, 0, 0.6); margin-bottom: 1.5rem; animation: pulse 2s ease-in-out infinite;">
+                The Fire Spreads
+            </h2>
+            <p style="font-size: 1.5rem; color: #ffaa00; max-width: 800px; margin: 0 auto; line-height: 1.8; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);">
+                Every minute of delay means <strong style="color: #ff4444;">exponentially more destruction</strong>. 
+                The clock is ticking.
+            </p>
+        </div>
+        <!-- Ambient fire glow effects -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 80%, rgba(255, 100, 0, 0.2) 0%, transparent 50%); pointer-events: none;"></div>
+        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 200px; background: linear-gradient(to top, rgba(255, 68, 0, 0.15) 0%, transparent 100%); pointer-events: none;"></div>
+    </section>
+    
+    <!-- Statistics Section -->
+    <section class="section" id="crisisSection" style="background: linear-gradient(to bottom, #000000, #1a0000, #f8f9fa); padding: 4rem 2rem;">
+        <div class="container">
+            <h2 class="section-title" style="font-size: 3rem; margin-bottom: 1rem; text-align: center; color: #ff4444; text-shadow: 0 2px 10px rgba(255, 68, 68, 0.3);">
+                The Stakes Are Higher Than Ever
+            </h2>
+            <p style="font-size: 1.4rem; margin-bottom: 3rem; text-align: center; color: #cc0000; font-weight: 600;">
+                While you read this, fires are spreading...
+            </p>
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <!-- Stat 1 - Left -->
+                <div class="stat-card" data-delay="0" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
+                    <div style="text-align: left; max-width: 500px;">
+                        <div class="counter" data-target="60000" style="font-size: 4rem; font-weight: bold; color: #ff6b6b; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Wildfires Annually</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">in the United States alone</div>
+                    </div>
+                </div>
+
+                <!-- Stat 2 - Right -->
+                <div class="stat-card" data-delay="200" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
+                    <div style="text-align: right; max-width: 500px;">
+                        <div class="counter" data-target="100" data-prefix="$" data-suffix="B+" style="font-size: 4rem; font-weight: bold; color: #ff9f43; margin-bottom: 0.5rem;">$0B+</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Economic Damage</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">property, infrastructure, and recovery costs</div>
+                    </div>
+                </div>
+
+                <!-- Stat 3 - Left -->
+                <div class="stat-card" data-delay="400" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
+                    <div style="text-align: left; max-width: 500px;">
+                        <div class="counter" data-target="1000" data-suffix="+" style="font-size: 4rem; font-weight: bold; color: #ee5a6f; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Lives Lost</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">and thousands more injured</div>
+                    </div>
+                </div>
+
+                <!-- Stat 4 - Right -->
+                <div class="stat-card" data-delay="600" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
+                    <div style="text-align: right; max-width: 500px;">
+                        <div class="counter" data-target="10" data-suffix="M+" style="font-size: 4rem; font-weight: bold; color: #a55eea; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Acres Burned</div>
+                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">destroying ecosystems and homes</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 4rem; max-width: 1000px; margin-left: auto; margin-right: auto; text-align: center; padding: 3rem; background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), rgba(255, 0, 0, 0.05)); border: 3px solid #ff4444; border-radius: 12px; box-shadow: 0 8px 30px rgba(255, 0, 0, 0.2);">
+                <h3 style="color: #ff0000; font-size: 2rem; margin-bottom: 1rem; font-weight: 800;">The Critical Problem</h3>
+                <p style="font-size: 1.3rem; color: #333; line-height: 1.8; margin-bottom: 1rem;">
+                    Current systems detect fires <strong style="color: #ff0000;">2-12 hours after ignition</strong>. 
+                    By then, a small campfire becomes an <strong style="color: #ff0000;">unstoppable inferno</strong>.
+                </p>
+                <p style="font-size: 1.2rem; color: #666; line-height: 1.7;">
+                    Ground observers, lookout towers, and aircraft can't provide the continuous, 
+                    <strong style="color: #ff4444;">global coverage</strong> needed to save lives and property.
+                </p>
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid rgba(255, 68, 68, 0.3);">
+                    <p style="font-size: 1.4rem; color: #ff0000; font-weight: 700; margin: 0;">
+                        Detection delay = Exponential destruction
+                    </p>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Challenge Section -->
     <section id="challenge" class="section">
         <div class="container">
-            <h2 class="section-title">The Challenge</h2>
+            <h2 class="section-title">Why Current Detection Fails</h2>
             <div class="challenge-grid">
                 <div class="challenge-card">
-                    <div class="card-icon">Launch</div>
-                    <h3>Rapid Commercialization</h3>
-                    <p>Space business is accelerating with unprecedented opportunities in LEO</p>
+                    <h3>Detection Delay</h3>
+                    <p>Ground-based systems detect fires 2-12 hours after ignition, when containment becomes exponentially harder</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Regulate</div>
-                    <h3>Regulatory Complexity</h3>
-                    <p>Navigating international space law and emerging regulations</p>
+                    <h3>Limited Coverage</h3>
+                    <p>Remote and wilderness areas lack monitoring infrastructure, leaving vast territories unprotected</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Sustain</div>
-                    <h3>Environmental Impact</h3>
-                    <p>Addressing space debris and sustainable orbital operations</p>
+                    <h3>No Night Vision</h3>
+                    <p>Traditional detection struggles at night and in smoke conditions when fires spread fastest</p>
                 </div>
                 <div class="challenge-card">
-                    <div class="card-icon">Innovate</div>
-                    <h3>Innovation Required</h3>
-                    <p>Creating scalable, sustainable business models for space</p>
+                    <h3>High Operating Costs</h3>
+                    <p>Aircraft patrols and tower networks are expensive and can't provide continuous, global coverage</p>
                 </div>
             </div>
         </div>
@@ -111,26 +234,83 @@
     <!-- Solution Section -->
     <section id="solution" class="section section-alt">
         <div class="container">
-            <h2 class="section-title">Our Solution</h2>
+            <h2 class="section-title" style="font-size: 2.8rem; margin-bottom: 1rem;">Introducing FLARESat</h2>
+            <p style="text-align: center; font-size: 1.4rem; color: #4ecdc4; margin-bottom: 3rem;">
+                Space-Based Fire Detection That Saves Lives and Property
+            </p>
             <div class="solution-content">
                 <div class="solution-text">
-                    <h3>Sustainable LEO Business Model</h3>
-                    <p>
-                        We propose a comprehensive business model that addresses the unique 
-                        challenges of operating in Low Earth Orbit while maximizing the 
-                        economic potential of space commercialization.
+                    <h3 style="color: #4ecdc4; font-size: 2rem;">Our Solution</h3>
+                    <p style="font-size: 1.1rem; line-height: 1.8;">
+                        <strong>FLARESat</strong> is a Walker Delta constellation of 500 satellites in Low Earth Orbit, 
+                        providing <strong>continuous, real-time wildfire detection</strong> across the entire globe.
                     </p>
-                    <ul class="solution-features">
-                        <li>Scalable infrastructure design</li>
-                        <li>Environmental sustainability focus</li>
-                        <li>Regulatory compliance framework</li>
-                        <li>Multi-revenue stream approach</li>
+                    <ul class="solution-features" style="font-size: 1.05rem; line-height: 1.9;">
+                        <li><strong>Early Detection:</strong> Identify fires within 15 minutes of ignition—before they spread</li>
+                        <li><strong>24/7 Global Coverage:</strong> 500 satellites ensure no fire goes undetected, day or night</li>
+                        <li><strong>Thermal Imaging:</strong> Advanced sensors detect heat signatures through smoke and darkness</li>
+                        <li><strong>Multi-Point Verification:</strong> Satellites coordinate to confirm fires, eliminating false alarms</li>
+                        <li><strong>Instant Alerts:</strong> Real-time data transmission to emergency responders worldwide</li>
+                        <li><strong>Scalable & Sustainable:</strong> LEO business model with minimal space debris impact</li>
                     </ul>
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; border-radius: 4px;">
+                        <h4 style="color: #4ecdc4; margin-bottom: 0.5rem;">The Impact</h4>
+                        <p style="font-size: 1.05rem; margin: 0;">
+                            Early detection can reduce firefighting costs by 50-80% and save thousands of lives annually. 
+                            FLARESat turns hours of delay into minutes of action.
+                        </p>
+                    </div>
                 </div>
                 <div class="solution-visual">
-                    <div class="placeholder-box">
-                        <p>Business Model Visualization</p>
+                    <div class="placeholder-box" style="background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(255, 107, 107, 0.2)); border: 2px solid #4ecdc4; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <h3 style="color: #4ecdc4; margin-bottom: 0.5rem;">Walker Delta Constellation</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">56°:500/20/1</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">500 Satellites • 20 Orbital Planes</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9;">56° Inclination • 500-550km Altitude</p>
+                        <p style="font-size: 0.95rem; opacity: 0.9; margin-top: 1rem;">Diamond Coverage Pattern</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Satellite Section -->
+    <section id="satellite" class="section">
+        <div class="container">
+            <h2 class="section-title">FLARESat - Our Custom Satellite</h2>
+            <div class="satellite-content">
+                <div class="satellite-model" id="satelliteModel">
+                    <!-- 3D Model will be rendered here -->
+                </div>
+                <div class="satellite-info">
+                    <h3>Advanced Fire Detection Technology</h3>
+                    <p>
+                        FLARESat is our custom-designed satellite specifically engineered for 
+                        real-time wildfire detection and monitoring from Low Earth Orbit.
+                    </p>
+                    <div class="satellite-specs">
+                        <div class="spec-item">
+                            <h4>Detection Range</h4>
+                            <p>6km radius coverage</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Orbital Altitude</h4>
+                            <p>400-600km LEO</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Solar Panels</h4>
+                            <p>High-efficiency deployable arrays</p>
+                        </div>
+                        <div class="spec-item">
+                            <h4>Communication</h4>
+                            <p>Real-time data transmission</p>
+                        </div>
+                    </div>
+                    <p class="satellite-description">
+                        Equipped with thermal imaging sensors and advanced AI algorithms, 
+                        FLARESat can detect fire signatures and coordinate with nearby 
+                        satellites for multi-point verification before alerting ground stations.
+                    </p>
                 </div>
             </div>
         </div>
@@ -169,6 +349,50 @@
         </div>
     </section>
 
+    <!-- 3D Earth Visualization Section -->
+    <section id="visualization" class="section" style="background: #000000; padding: 0;">
+        <!-- Gradient Container -->
+        <div style="background: linear-gradient(to bottom, #ffffff, #000000); 
+            min-height: 60vh; 
+            padding: 3rem 0 2rem 0; 
+            display: flex; 
+            align-items: center;">
+            <div class="container" style="width: 100%;">
+                <h2 class="section-title" style="color: #ffffff; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">See FLARESat in Action</h2>
+                <p style="color: #cccccc; text-align: center; margin-bottom: 0; font-size: 1.2rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
+                    Watch our Walker Delta constellation detect and monitor wildfires in real-time
+                </p>
+            </div>
+        </div>
+        <!-- 3D Visualization -->
+        <div class="hero-background" style="height: 100vh; position: relative;"></div>
+        <div class="container" style="padding: 2rem 0 3rem 0;">
+            <div style="color: #4ecdc4; text-align: center; font-size: 1rem; line-height: 2.2; max-width: 900px; margin-left: auto; margin-right: auto;">
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #ff4444; border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Active fires</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #666666; border: 1px solid #888; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Smoke clouds</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #4ecdc4, #ff6b6b); border-radius: 50%; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">20 orbital planes</span>
+                </div>
+                <br>
+                <div style="display: inline-block; margin: 0 1rem; margin-top: 0.5rem;">
+                    <span style="display: inline-block; width: 30px; height: 3px; background: #00ff00; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">Optical camera (clear view)</span>
+                </div>
+                <div style="display: inline-block; margin: 0 1rem; margin-top: 0.5rem;">
+                    <span style="display: inline-block; width: 30px; height: 3px; background: #ff6600; vertical-align: middle; margin-right: 6px;"></span>
+                    <span style="vertical-align: middle;">SWIR (sees through smoke)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -179,5 +403,138 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+        // Animated Counter for Statistics
+        function animateCounter(element) {
+            const target = parseInt(element.getAttribute('data-target'));
+            const prefix = element.getAttribute('data-prefix') || '';
+            const suffix = element.getAttribute('data-suffix') || '+';
+            const duration = 2000; // 2 seconds
+            const increment = target / (duration / 16); // 60fps
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                
+                // Format number with commas
+                const displayNumber = Math.floor(current).toLocaleString();
+                element.textContent = prefix + displayNumber + suffix;
+            }, 16);
+        }
+        
+        // Intersection Observer for scroll-triggered animations
+        const observerOptions = {
+            threshold: 0.4,
+            rootMargin: '0px'
+        };
+        
+        const statCardsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+                    const delay = parseInt(entry.target.getAttribute('data-delay')) || 0;
+                    
+                    setTimeout(() => {
+                        // Slide in from left or right
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateX(0)';
+                        entry.target.classList.add('animated');
+                        
+                        // Animate counter
+                        const counter = entry.target.querySelector('.counter');
+                        if (counter) {
+                            setTimeout(() => {
+                                animateCounter(counter);
+                            }, 200);
+                        }
+                    }, delay);
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all stat cards when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                statCardsObserver.observe(card);
+            });
+        });
+        
+        // Fire burn-away effect when scrolling past hero
+        let burnTriggered = false;
+        const burnOverlay = document.getElementById('burnOverlay');
+        const hero = document.querySelector('.hero');
+        
+        function createFlameParticle(x, y) {
+            const flame = document.createElement('div');
+            flame.className = 'flame-particle';
+            flame.style.left = x + 'px';
+            flame.style.top = y + 'px';
+            flame.style.animationDelay = Math.random() * 0.3 + 's';
+            burnOverlay.appendChild(flame);
+            
+            setTimeout(() => flame.remove(), 1500);
+        }
+        
+        function createEmberParticle(x, y) {
+            const ember = document.createElement('div');
+            ember.className = 'ember-particle';
+            ember.style.left = x + 'px';
+            ember.style.top = y + 'px';
+            ember.style.setProperty('--drift', (Math.random() - 0.5) * 200 + 'px');
+            ember.style.animationDelay = Math.random() * 0.5 + 's';
+            burnOverlay.appendChild(ember);
+            
+            setTimeout(() => ember.remove(), 2000);
+        }
+        
+        function triggerBurnEffect() {
+            if (burnTriggered) return;
+            burnTriggered = true;
+            
+            burnOverlay.classList.add('active');
+            
+            // Create fire particles across the width of the screen
+            const screenWidth = window.innerWidth;
+            const numFlames = 60;  // Increased from 40
+            const numEmbers = 200; // Increased from 100
+            
+            // Create flames in multiple waves for more density
+            for (let wave = 0; wave < 2; wave++) {
+                for (let i = 0; i < numFlames; i++) {
+                    setTimeout(() => {
+                        const x = (screenWidth / numFlames) * i + Math.random() * 60 - 30;
+                        const y = window.innerHeight * 0.35 + Math.random() * 150 + (wave * 100);
+                        createFlameParticle(x, y);
+                    }, i * 20 + (wave * 600));
+                }
+            }
+            
+            // Create embers in continuous stream
+            for (let i = 0; i < numEmbers; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * screenWidth;
+                    const y = window.innerHeight * 0.25 + Math.random() * 300;
+                    createEmberParticle(x, y);
+                }, i * 10);
+            }
+            
+            // Fade out overlay after effect
+            setTimeout(() => {
+                burnOverlay.classList.remove('active');
+            }, 3000);
+        }
+        
+        // Trigger burn effect when scrolling past hero
+        window.addEventListener('scroll', () => {
+            if (!burnTriggered && window.scrollY > hero.offsetHeight * 0.5) {
+                triggerBurnEffect();
+            }
+        });
+    </script>
 </body>
 </html>
