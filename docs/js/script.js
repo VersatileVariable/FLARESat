@@ -3,10 +3,10 @@ const map = L.map("map", {
   worldCopyJump: false,
   maxBoundsViscosity: 1.0,
   maxBounds: [
-    [-90, -180],
-    [90, 180],
+    [24, -125], // Southwest corner of contiguous US
+    [50, -66], // Northeast corner
   ],
-}).setView([0, 0], 2);
+}).setView([39.5, -98.35], 4); // approximate center of contiguous US, zoom level 4
 
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
   attribution:
@@ -38,8 +38,8 @@ const nominalFires = fireData
   .map((f) => {
     const circle = L.circleMarker([f.latitude, f.longitude], {
       radius: Math.min(1, Math.max(0.375, f.frp / 8)),
-      color: "#0A1929",
-      fillColor: "#0A1929",
+      color: "#090909",
+      fillColor: "#090909",
       fillOpacity: 0.6,
     }).addTo(map);
 
