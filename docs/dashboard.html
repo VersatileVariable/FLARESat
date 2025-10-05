@@ -18,38 +18,36 @@
       body {
         margin: 0;
       }
-
       html,
       body {
         background-color: #0a1929;
       }
-
       .leaflet-container {
         background-color: #0a1929 !important;
       }
-
       .map-section {
         position: relative;
         height: 100vh;
         width: 100%;
       }
-
       #map {
         height: 100%;
         width: 100%;
         border-radius: 12px;
         z-index: 1;
       }
-
+      .sidebar {
+        background-color: #0a1929;
+        color: #fff;
+      }
       .legend,
       .scale-bar,
       .map-controls,
       .info-popup {
-        z-index: 1000; /* ensures your dashboard UI stays above the map */
+        z-index: 1000;
       }
     </style>
   </head>
-
   <body>
     <!-- Navigation -->
     <nav class="navbar">
@@ -75,15 +73,15 @@
             <div class="legend-title">Legend</div>
             <div class="legend-item">
               <div class="legend-dot" style="background: red"></div>
-              <span>High Confidence from current system</span>
+              <span>High Confidence Fires</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background: orange"></div>
-              <span>High Confidence from our system</span>
+              <span>Nominal Fires</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background: #00ffff"></div>
-              <span>Our Satelites</span>
+              <span>Satellites</span>
             </div>
           </div>
 
@@ -116,61 +114,7 @@
 
     <!-- Scripts -->
     <script src="./data/fireData.js"></script>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-      const map = L.map("map", {
-        worldCopyJump: false,
-        maxBoundsViscosity: 1.0,
-        maxBounds: [
-          [-90, -180],
-          [90, 180],
-        ],
-      }).setView([0, 0], 2);
-
-      // Dark background tiles
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        {
-          attribution:
-            '&copy; <a href="https://carto.com/">CARTO</a> | Fire data © NASA FIRMS',
-          subdomains: "abcd",
-          maxZoom: 19,
-          noWrap: true,
-        }
-      ).addTo(map);
-
-      // Fetch and plot fires
-      const highFires = [];
-      const nominalFires = [];
-
-      fireData.forEach((fire) => {
-        const { latitude, longitude, confidence, bright_ti4, frp, daynight } =
-          fire;
-
-        if (confidence === "h") {
-          const circle = L.circleMarker([latitude, longitude], {
-            radius: Math.min(1, Math.max(0.375, frp / 8)),
-            color: "red",
-            fillColor: "red",
-            fillOpacity: 0.6,
-          }).addTo(map);
-          highFires.push(circle);
-        } else if (confidence === "n") {
-          const circle = L.circleMarker([latitude, longitude], {
-            radius: Math.min(1, Math.max(0.375, frp / 8)),
-            color: "#1a1a1a", // dark gray start color
-            fillColor: "#1a1a1a",
-            fillOpacity: 0.6,
-          }).addTo(map);
-          nominalFires.push(circle);
-        }
-      });
-      // Reset view button
-      document.getElementById("resetView").addEventListener("click", () => {
-        map.setView([0, 0], 2);
-      });
-    </script>
     <script src="./js/script.js"></script>
   </body>
 </html>
