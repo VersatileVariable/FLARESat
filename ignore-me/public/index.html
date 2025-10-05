@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Fire Map</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      body {
+        margin: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100vw;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map", {
+        worldCopyJump: false, // prevents jumping between copies
+        maxBoundsViscosity: 1.0, // keeps the map in bounds
+        maxBounds: [
+          [-90, -180],
+          [90, 180],
+        ], // restrict view to world extent
+      }).setView([20, 0], 2);
+
+      // Add base map
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 10,
+        noWrap: true, // 🔥 this stops repeating tiles
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+      // Fetch fire data from your Express server
+      fetch("/fires")
+        .then((res) => res.json())
+        .then((fires) => {
+          fires.forEach((fire) => {
+            const {
+              latitude,
+              longitude,
+              confidence,
+              bright_ti4,
+              frp,
+              daynight,
+            } = fire;
+
+            // Color markers based on confidence
+            const color =
+              confidence === "h"
+                ? "red"
+                : confidence === "n"
+                ? "orange"
+                : "yellow";
+
+            const circle = L.circleMarker([latitude, longitude], {
+              radius: Math.min(1, Math.max(0.375, frp / 8)), // scale by FRP
+              color,
+              fillOpacity: 0.6,
+            }).addTo(map);
+
+            circle.bindPopup(
+              `<b>🔥 Fire Detection</b><br>
+            Confidence: ${confidence}<br>
+            Brightness: ${bright_ti4} K<br>
+            FRP: ${frp} MW<br>
+            Day/Night: ${daynight}`
+            );
+          });
+        })
+        .catch((err) => console.error("Error loading fires:", err));
+    </script>
+  </body>
+</html>
