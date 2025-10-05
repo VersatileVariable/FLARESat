@@ -1226,33 +1226,17 @@ function animateHero() {
         const stretchX = Math.cos(cloud.stretchDirection) * stretchFactor;
         const stretchZ = Math.sin(cloud.stretchDirection) * stretchFactor;
         
-        // Animate individual puffs with wind turbulence
-        cloud.mesh.children.forEach((puff, puffIndex) => {
-            const puffInfo = cloud.puffData[puffIndex];
-            if (!puffInfo) return;
-            
-            // Individual puff movement in wind (bobbing and weaving)
-            const puffWindPhase = time * 0.001 * puffInfo.windSpeed + puffInfo.windPhase;
-            const puffWobbleX = Math.sin(puffWindPhase) * puffInfo.windAmplitude;
-            const puffWobbleY = Math.sin(puffWindPhase * 1.3 + 1) * puffInfo.windAmplitude * 0.5;
-            const puffWobbleZ = Math.cos(puffWindPhase * 0.9) * puffInfo.windAmplitude;
-            
-            // Apply wind movement to puff position
-            puff.position.set(
-                puffInfo.originalPos.x + puffWobbleX,
-                puffInfo.originalPos.y + puffWobbleY,
-                puffInfo.originalPos.z + puffWobbleZ
-            );
-            
-            // Wind stretching effect on individual puffs
-            const puffStretchX = puffInfo.originalScale.x * (1 + Math.abs(stretchX - 1) * 0.5);
-            const puffStretchZ = puffInfo.originalScale.z * (1 + Math.abs(stretchZ - 1) * 0.5);
-            puff.scale.set(puffStretchX, puffInfo.originalScale.y, puffStretchZ);
-            
-            // Subtle pulsing opacity with wind variation
-            const pulse = Math.sin(time * 0.001 + index * 0.5) * 0.05 + 0.95;
-            const windOpacityVariation = windGust * 0.05; // Slight transparency during gusts
-            puff.material.opacity = (0.9 * pulse) - windOpacityVariation;
+        // Apply unified wind effects to entire cloud (moves as one piece)
+        // Subtle stretching in wind direction
+        cloud.mesh.scale.set(stretchX, 1, stretchZ);
+        
+        // Unified opacity variation for entire cloud
+        const pulse = Math.sin(time * 0.001 + index * 0.5) * 0.05 + 0.95;
+        const windOpacityVariation = windGust * 0.05;
+        const cloudOpacity = (0.9 * pulse) - windOpacityVariation;
+        
+        cloud.mesh.children.forEach((puff) => {
+            puff.material.opacity = cloudOpacity;
         });
         
         // Fade out at end of life
