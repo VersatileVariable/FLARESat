@@ -89,7 +89,7 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">LEO Business</div>
+            <div class="nav-brand">F.L.A.R.E Satellite</div>
             <ul class="nav-menu">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#challenge">Challenge</a></li>
@@ -346,6 +346,12 @@
                     <p class="team-role">Imaging & Camera Systems Lead</p>
                     <a href="https://www.linkedin.com/in/braden-smith-ece-2027cu/" target="_blank" rel="noopener noreferrer" class="team-link">LinkedIn</a>
                 </div>
+                <div class="team-card">
+                    <div class="team-avatar">JS</div>
+                    <h3>Jeremiah Schmutz</h3>
+                    <p class="team-role">Backend Developer - NASA APIs Integration</p>
+                    <a href="https://www.linkedin.com/in/jeremiah-schmutz/" target="_blank" rel="noopener noreferrer" class="team-link">LinkedIn</a>
+                </div>
             </div>
         </div>
     </section>
@@ -501,7 +507,7 @@
         
         // Add smooth transitions for crossfade effect
         navbar.style.transition = 'box-shadow 0.6s ease, border-bottom 0.6s ease';
-        navBrand.style.transition = 'background 0.6s ease, text-shadow 0.6s ease';
+        navBrand.style.transition = 'color 0.6s ease, text-shadow 0.6s ease';
         navLinks.forEach(link => {
             link.style.transition = 'text-shadow 0.6s ease';
         });
@@ -527,16 +533,13 @@
             navbar.style.boxShadow = `0 4px 20px rgba(${r}, ${g}, ${b}, 0.3), 0 2px 10px rgba(0, 0, 0, 0.5)`;
             navbar.style.borderBottom = `2px solid rgba(${r}, ${g}, ${b}, 0.3)`;
             
-            // Update nav brand gradient
-            if (progress < 0.5) {
-                // Warm gradient (fire colors)
-                navBrand.style.background = 'linear-gradient(135deg, #ff6600, #ffcc00, #ff3300)';
-                navBrand.style.textShadow = '0 0 20px rgba(255, 100, 0, 0.5)';
-            } else {
-                // Cool gradient (space colors)
-                navBrand.style.background = 'linear-gradient(135deg, #4ecdc4, #88d4ce, #4ecdc4)';
-                navBrand.style.textShadow = '0 0 20px rgba(78, 205, 196, 0.5)';
-            }
+            // Update nav brand color with smooth interpolation
+            const brandR = Math.round(255 - (255 - 78) * progress);
+            const brandG = Math.round(153 + (205 - 153) * progress);
+            const brandB = Math.round(68 + (196 - 68) * progress);
+            
+            navBrand.style.color = `rgb(${brandR}, ${brandG}, ${brandB})`;
+            navBrand.style.textShadow = `0 0 10px rgba(${r}, ${g}, ${b}, 0.6)`;
             
             // Update nav links text shadow
             navLinks.forEach(link => {
