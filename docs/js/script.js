@@ -8,13 +8,16 @@ const map = L.map("map", {
   ],
 }).setView([39.5, -98.35], 4); // approximate center of contiguous US, zoom level 4
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  attribution:
-    '&copy; <a href="https://carto.com/">CARTO</a> | Fire data © NASA FIRMS',
-  subdomains: "abcd",
-  maxZoom: 19,
-  noWrap: true,
-}).addTo(map);
+const tileLayer = L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {
+    attribution:
+      '&copy; <a href="https://carto.com/">CARTO</a> | Fire data © NASA FIRMS',
+    subdomains: "abcd",
+    maxZoom: 19,
+    noWrap: true,
+  }
+).addTo(map);
 
 // ===== High confidence fires =====
 fireData.forEach((fire) => {
@@ -55,10 +58,10 @@ const nominalFires = fireData
 // ===== Walker Delta Satellite Constellation =====
 const inclination = 56;
 const totalSatellites = 500;
-const planes = 20;
+const planes = 100;
 const satsPerPlane = totalSatellites / planes;
-const phasing = 1;
-const orbitalPeriod = 95 * 60 * 1000;
+const phasing = 2;
+const orbitalPeriod = 25 * 60 * 1000;
 const angularSpeed = (2 * Math.PI) / orbitalPeriod;
 
 let satellites = [];
@@ -78,7 +81,6 @@ function initSatellites() {
     }
   }
 }
-initSatellites();
 
 // ===== Update satellite positions =====
 function updateSatellites(time) {
@@ -107,7 +109,7 @@ function updateFireColors() {
       const satLatLng = sat.marker.getLatLng();
       const dist = map.distance(fireLatLng, satLatLng); // meters
 
-      if (dist < 20000) {
+      if (dist < 130000) {
         // 20 km
         fire.activated = true;
         fire.circle.setStyle({ color: "orange", fillColor: "orange" });
@@ -124,8 +126,11 @@ function animate() {
   updateFireColors();
   requestAnimationFrame(animate);
 }
-animate();
-
+tileLayer.on("load", () => {
+  console.log("Map tiles fully loaded, starting satellites...");
+  initSatellites(); // initialize satellite markers
+  animate(); // start the animation loop
+});
 // ===== Reset view button =====
 document.getElementById("resetView").addEventListener("click", () => {
   map.setView([0, 0], 2);
