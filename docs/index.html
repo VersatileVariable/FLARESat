@@ -6,7 +6,7 @@
     <meta name="description" content="NASA Space Apps Challenge 2025 - Commercializing Low Earth Orbit">
     <title>LEO Business Challenge | NASA Space Apps 2025</title>
     <style>
-        body { margin: 0; overflow-x: hidden; }
+        body { margin: 0; overflow-x: auto; }
         .hero-background {
             width: 100%;
             height: 100vh;
@@ -100,100 +100,86 @@
         </div>
     </nav>
 
-    <!-- Burn Overlay for Fire Effect -->
-    <div class="burn-overlay" id="burnOverlay"></div>
-
     <!-- Hero Section -->
-    <section id="home" class="hero burn-container" style="background: linear-gradient(135deg, #ff6b00 0%, #ff0000 50%, #000000 100%); min-height: 90vh; display: flex; align-items: center; justify-content: center; position: relative;">
+    <section id="home" class="hero burn-container" style="background: linear-gradient(135deg, #cc4400 0%, #660000 50%, #000000 100%); min-height: 90vh; display: flex; align-items: center; justify-content: center; position: relative;">
         <div class="hero-content" style="text-align: center; padding: 4rem 2rem; position: relative; z-index: 2;">
-            <h1 style="font-size: 4.5rem; margin-bottom: 1rem; color: #ffffff; text-shadow: 0 0 20px rgba(255, 100, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6); font-weight: 900; letter-spacing: 2px;">
+            <h1 style="font-size: 4rem; margin-bottom: 1rem; color: #ffffff; text-shadow: 0 0 15px rgba(255, 100, 0, 0.5); font-weight: 800; letter-spacing: 1px;">
                 FLARESat
             </h1>
-            <p style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffaa00; font-weight: 700; text-shadow: 0 0 10px rgba(255, 100, 0, 0.6);">
+            <p style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #ff9944; font-weight: 600; text-shadow: 0 0 8px rgba(255, 100, 0, 0.4);">
                 Every Second Counts
             </p>
-            <p style="font-size: 1.3rem; margin-bottom: 0; color: #ffffff; opacity: 0.95; line-height: 1.6; max-width: 800px; margin-left: auto; margin-right: auto;">
-                <span class="pulse-text" style="font-weight: 700; color: #ffaa00;">Wildfires don't wait.</span> By the time you see the smoke, it's already too late.
+            <p style="font-size: 1.2rem; margin-bottom: 0; color: #ffffff; opacity: 0.9; line-height: 1.6; max-width: 800px; margin-left: auto; margin-right: auto;">
+                <span style="font-weight: 600; color: #ff9944;">Wildfires don't wait.</span> By the time you see the smoke, it's already too late.
             </p>
-            <p style="font-size: 1.1rem; margin-top: 1rem; color: #ffffff; opacity: 0.9;">
-                FLARESat detects fires from space in <strong style="color: #ffaa00;">15 minutes</strong>—before they become catastrophes.
+            <p style="font-size: 1rem; margin-top: 1rem; color: #ffffff; opacity: 0.85;">
+                FLARESat detects fires from space in <strong style="color: #ff9944;">15 minutes</strong>—before they become catastrophes.
             </p>
         </div>
         
-        <!-- Animated flames at bottom of hero -->
-        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(255, 100, 0, 0.1) 100%); z-index: 1;"></div>
+        <!-- Ember particles container -->
+        <div id="emberContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;"></div>
     </section>
     
-    <!-- Fire Transition Container -->
-    <section id="fireTransition" style="background: linear-gradient(to bottom, #000000, #1a0000); min-height: 40vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-        <div style="text-align: center; padding: 3rem 2rem; position: relative; z-index: 2;">
-            <h2 style="font-size: 3rem; color: #ff6b00; font-weight: 900; text-shadow: 0 0 30px rgba(255, 100, 0, 0.8), 0 0 60px rgba(255, 0, 0, 0.6); margin-bottom: 1.5rem; animation: pulse 2s ease-in-out infinite;">
-                The Fire Spreads
-            </h2>
-            <p style="font-size: 1.5rem; color: #ffaa00; max-width: 800px; margin: 0 auto; line-height: 1.8; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);">
-                Every minute of delay means <strong style="color: #ff4444;">exponentially more destruction</strong>. 
-                The clock is ticking.
-            </p>
-        </div>
-        <!-- Ambient fire glow effects -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 80%, rgba(255, 100, 0, 0.2) 0%, transparent 50%); pointer-events: none;"></div>
-        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 200px; background: linear-gradient(to top, rgba(255, 68, 0, 0.15) 0%, transparent 100%); pointer-events: none;"></div>
-    </section>
+    <!-- Fire Effect Divider -->
+    <div style="width: 100%; height: 150px; background: #000000; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; z-index: 9999;">
+        <img src="images/FireEffect.png" alt="" style="width: 100%; height: auto; transform: rotate(90deg); object-fit: cover; opacity: 0.8; position: relative; z-index: 10000;">
+    </div>
     
     <!-- Statistics Section -->
-    <section class="section" id="crisisSection" style="background: linear-gradient(to bottom, #000000, #1a0000, #f8f9fa); padding: 4rem 2rem;">
+    <section class="section" id="crisisSection" style="background: linear-gradient(to bottom, #000000 0%, #000000 92%, #1a0000 96%, #ffffff 100%); padding: 4rem 2rem;">
         <div class="container">
             <h2 class="section-title" style="font-size: 3rem; margin-bottom: 1rem; text-align: center; color: #ff4444; text-shadow: 0 2px 10px rgba(255, 68, 68, 0.3);">
                 The Stakes Are Higher Than Ever
             </h2>
-            <p style="font-size: 1.4rem; margin-bottom: 3rem; text-align: center; color: #cc0000; font-weight: 600;">
+            <p style="font-size: 1.4rem; margin-bottom: 3rem; text-align: center; color: #ff6666; font-weight: 600;">
                 While you read this, fires are spreading...
             </p>
             <div style="max-width: 1200px; margin: 0 auto;">
                 <!-- Stat 1 - Left -->
                 <div class="stat-card" data-delay="0" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
                     <div style="text-align: left; max-width: 500px;">
-                        <div class="counter" data-target="60000" style="font-size: 4rem; font-weight: bold; color: #ff6b6b; margin-bottom: 0.5rem;">0</div>
-                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Wildfires Annually</div>
-                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">in the United States alone</div>
+                        <div class="counter" data-target="13" data-suffix=".5M+" style="font-size: 4rem; font-weight: bold; color: #ff3300; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #ff5522;">Hectares Burned in 2024</div>
+                        <div style="font-size: 1rem; opacity: 0.9; color: #ff7744;">the most extreme year on record</div>
                     </div>
                 </div>
 
                 <!-- Stat 2 - Right -->
                 <div class="stat-card" data-delay="200" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
                     <div style="text-align: right; max-width: 500px;">
-                        <div class="counter" data-target="100" data-prefix="$" data-suffix="B+" style="font-size: 4rem; font-weight: bold; color: #ff9f43; margin-bottom: 0.5rem;">$0B+</div>
-                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Economic Damage</div>
-                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">property, infrastructure, and recovery costs</div>
+                        <div class="counter" data-target="136" data-prefix="$" data-suffix="B+" style="font-size: 4rem; font-weight: bold; color: #ff6600; margin-bottom: 0.5rem;">$0B+</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #ff7722;">Economic Losses (2015-2024)</div>
+                        <div style="font-size: 1rem; opacity: 0.9; color: #ff9944;">from wildfire damage worldwide</div>
                     </div>
                 </div>
 
                 <!-- Stat 3 - Left -->
                 <div class="stat-card" data-delay="400" style="opacity: 0; transform: translateX(-100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-start;">
                     <div style="text-align: left; max-width: 500px;">
-                        <div class="counter" data-target="1000" data-suffix="+" style="font-size: 4rem; font-weight: bold; color: #ee5a6f; margin-bottom: 0.5rem;">0</div>
-                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Lives Lost</div>
-                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">and thousands more injured</div>
+                        <div class="counter" data-target="1" data-suffix=".5M" style="font-size: 4rem; font-weight: bold; color: #ff9900; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #ffaa22;">Premature Deaths Annually</div>
+                        <div style="font-size: 1rem; opacity: 0.9; color: #ffbb44;">from wildfire smoke exposure</div>
                     </div>
                 </div>
 
                 <!-- Stat 4 - Right -->
                 <div class="stat-card" data-delay="600" style="opacity: 0; transform: translateX(100px); transition: all 0.8s ease; margin-bottom: 4rem; display: flex; align-items: center; justify-content: flex-end;">
                     <div style="text-align: right; max-width: 500px;">
-                        <div class="counter" data-target="10" data-suffix="M+" style="font-size: 4rem; font-weight: bold; color: #a55eea; margin-bottom: 0.5rem;">0</div>
-                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #333;">Acres Burned</div>
-                        <div style="font-size: 1rem; opacity: 0.7; color: #666;">destroying ecosystems and homes</div>
+                        <div class="counter" data-target="33" data-suffix="M+" style="font-size: 4rem; font-weight: bold; color: #ffcc00; margin-bottom: 0.5rem;">0</div>
+                        <div style="font-size: 1.3rem; margin-bottom: 0.3rem; font-weight: 600; color: #ffdd22;">Acres Burned (2024)</div>
+                        <div style="font-size: 1rem; opacity: 0.9; color: #ffee66;">an area the size of Greece</div>
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top: 4rem; max-width: 1000px; margin-left: auto; margin-right: auto; text-align: center; padding: 3rem; background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), rgba(255, 0, 0, 0.05)); border: 3px solid #ff4444; border-radius: 12px; box-shadow: 0 8px 30px rgba(255, 0, 0, 0.2);">
+            <div style="margin-top: 4rem; max-width: 1000px; margin-left: auto; margin-right: auto; text-align: center; padding: 3rem; background: linear-gradient(180deg, rgba(255, 68, 68, 0.1), rgba(255, 0, 0, 0.05)); border: 3px solid #ff4444; border-radius: 12px; box-shadow: 0 8px 30px rgba(255, 0, 0, 0.2);">
                 <h3 style="color: #ff0000; font-size: 2rem; margin-bottom: 1rem; font-weight: 800;">The Critical Problem</h3>
-                <p style="font-size: 1.3rem; color: #333; line-height: 1.8; margin-bottom: 1rem;">
+                <p style="font-size: 1.3rem; color: #cccccc; line-height: 1.8; margin-bottom: 1rem;">
                     Current systems detect fires <strong style="color: #ff0000;">2-12 hours after ignition</strong>. 
                     By then, a small campfire becomes an <strong style="color: #ff0000;">unstoppable inferno</strong>.
                 </p>
-                <p style="font-size: 1.2rem; color: #666; line-height: 1.7;">
+                <p style="font-size: 1.2rem; color: #aaaaaa; line-height: 1.7;">
                     Ground observers, lookout towers, and aircraft can't provide the continuous, 
                     <strong style="color: #ff4444;">global coverage</strong> needed to save lives and property.
                 </p>
@@ -202,6 +188,15 @@
                         Detection delay = Exponential destruction
                     </p>
                 </div>
+            </div>
+            
+            <!-- Sources -->
+            <div style="margin-top: 3rem; text-align: center; padding: 1.5rem; background: rgba(0, 0, 0, 0.05); border-radius: 8px;">
+                <p style="font-size: 0.9rem; color: #666; margin: 0; line-height: 1.6;">
+                    <strong style="color: #333;">Sources:</strong><br>
+                    World Resources Institute (2024). <a href="https://www.wri.org/insights/global-trends-forest-fires" target="_blank" rel="noopener" style="color: #dcb843; text-decoration: none;">Global Trends in Forest Fires</a><br>
+                    Economic data from reinsurance analysis (2015-2024) | Mortality data from World Resources Institute smoke exposure studies
+                </p>
             </div>
         </div>
     </section>
@@ -464,77 +459,34 @@
             });
         });
         
-        // Fire burn-away effect when scrolling past hero
-        let burnTriggered = false;
-        const burnOverlay = document.getElementById('burnOverlay');
-        const hero = document.querySelector('.hero');
+        // Ember particle effects
+        const emberContainer = document.getElementById('emberContainer');
         
-        function createFlameParticle(x, y) {
-            const flame = document.createElement('div');
-            flame.className = 'flame-particle';
-            flame.style.left = x + 'px';
-            flame.style.top = y + 'px';
-            flame.style.animationDelay = Math.random() * 0.3 + 's';
-            burnOverlay.appendChild(flame);
-            
-            setTimeout(() => flame.remove(), 1500);
-        }
-        
-        function createEmberParticle(x, y) {
+        function createEmber() {
             const ember = document.createElement('div');
             ember.className = 'ember-particle';
-            ember.style.left = x + 'px';
-            ember.style.top = y + 'px';
-            ember.style.setProperty('--drift', (Math.random() - 0.5) * 200 + 'px');
-            ember.style.animationDelay = Math.random() * 0.5 + 's';
-            burnOverlay.appendChild(ember);
             
-            setTimeout(() => ember.remove(), 2000);
+            // Random starting position at bottom
+            const startX = Math.random() * window.innerWidth;
+            ember.style.left = startX + 'px';
+            ember.style.bottom = '-10px';
+            
+            // Random drift direction
+            const drift = (Math.random() - 0.5) * 150;
+            ember.style.setProperty('--drift', drift + 'px');
+            
+            emberContainer.appendChild(ember);
+            
+            // Remove after animation
+            setTimeout(() => ember.remove(), 3000);
         }
         
-        function triggerBurnEffect() {
-            if (burnTriggered) return;
-            burnTriggered = true;
-            
-            burnOverlay.classList.add('active');
-            
-            // Create fire particles across the width of the screen
-            const screenWidth = window.innerWidth;
-            const numFlames = 60;  // Increased from 40
-            const numEmbers = 200; // Increased from 100
-            
-            // Create flames in multiple waves for more density
-            for (let wave = 0; wave < 2; wave++) {
-                for (let i = 0; i < numFlames; i++) {
-                    setTimeout(() => {
-                        const x = (screenWidth / numFlames) * i + Math.random() * 60 - 30;
-                        const y = window.innerHeight * 0.35 + Math.random() * 150 + (wave * 100);
-                        createFlameParticle(x, y);
-                    }, i * 20 + (wave * 600));
-                }
+        // Create embers periodically
+        setInterval(() => {
+            if (Math.random() > 0.7) { // 30% chance each interval
+                createEmber();
             }
-            
-            // Create embers in continuous stream
-            for (let i = 0; i < numEmbers; i++) {
-                setTimeout(() => {
-                    const x = Math.random() * screenWidth;
-                    const y = window.innerHeight * 0.25 + Math.random() * 300;
-                    createEmberParticle(x, y);
-                }, i * 10);
-            }
-            
-            // Fade out overlay after effect
-            setTimeout(() => {
-                burnOverlay.classList.remove('active');
-            }, 3000);
-        }
-        
-        // Trigger burn effect when scrolling past hero
-        window.addEventListener('scroll', () => {
-            if (!burnTriggered && window.scrollY > hero.offsetHeight * 0.5) {
-                triggerBurnEffect();
-            }
-        });
+        }, 300);
     </script>
 </body>
 </html>

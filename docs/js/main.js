@@ -196,10 +196,10 @@ function initHero3D() {
     createEarthDetails();
     createEquator();
 
-    // ========== WALKER DELTA CONSTELLATION: 56°:1000/20/1 ==========
+    // ========== WALKER DELTA CONSTELLATION: 56°:250/20/1 ==========
     // Based on Walker Delta pattern notation i:t/p/f (similar to Galileo navigation system):
     // i = 56° inclination (tilt of orbital plane relative to Earth's equator)
-    // t = 1000 total satellites
+    // t = 250 total satellites
     // p = 20 orbital planes  
     // f = 1 phasing factor (relative shift of satellites in adjacent planes)
     //
@@ -211,7 +211,7 @@ function initHero3D() {
     // • Each plane rotated around Earth's Z-axis by angle of 2π/p (360°/20 = 18°)
     //
     // Key Features:
-    // • 1000 Satellites Total - 50 satellites evenly distributed in each of the 20 orbital planes
+    // • 250 Satellites Total - 12.5 satellites evenly distributed in each of the 20 orbital planes
     // • 20 Orbital Planes - Each plane separated by 18° RAAN (Right Ascension of Ascending Node)
     // • 56° Inclination - Common angle for LEO constellations, provides good global coverage
     //   while avoiding polar regions (similar to Galileo's 56°:24/3/1 configuration)
@@ -233,9 +233,9 @@ function initHero3D() {
     // ✓ Optimal for global fire detection with rapid revisit times
     // ✓ Highly scalable design following established satellite navigation patterns
     
-    const totalSatellites = 1000;
+    const totalSatellites = 250;
     const numPlanes = 20;
-    const satellitesPerPlane = totalSatellites / numPlanes; // 50 satellites per plane
+    const satellitesPerPlane = totalSatellites / numPlanes; // 12.5 satellites per plane
     const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
     const orbitRadius = 14; // ~500-550 km altitude
     const orbitSpeed = 0.0003; // Slower orbital speed (was 0.0006)
