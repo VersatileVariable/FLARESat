@@ -37,18 +37,19 @@ body {
 
 /* ==================== NAVIGATION ==================== */
 .navbar {
-    background-color: rgba(255, 255, 255, 0.95);
+    background: linear-gradient(180deg, rgba(20, 10, 5, 0.98) 0%, rgba(40, 15, 5, 0.95) 100%);
     backdrop-filter: blur(10px);
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 20px rgba(255, 100, 0, 0.3), 0 2px 10px rgba(0, 0, 0, 0.5);
+    border-bottom: 2px solid rgba(255, 100, 0, 0.3);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 999999;
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: 2400px;
     margin: 0 auto;
     padding: 1rem 2rem;
     display: flex;
@@ -59,10 +60,12 @@ body {
 .nav-brand {
     font-size: 1.5rem;
     font-weight: bold;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(135deg, #ff6600, #ffcc00, #ff3300);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 0 20px rgba(255, 100, 0, 0.5);
+    letter-spacing: 1px;
 }
 
 .nav-menu {
@@ -73,13 +76,16 @@ body {
 
 .nav-menu a {
     text-decoration: none;
-    color: var(--text-dark);
-    font-weight: 500;
-    transition: color 0.3s ease;
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px rgba(255, 100, 0, 0.3);
 }
 
 .nav-menu a:hover {
-    color: var(--primary-color);
+    color: #ff9944;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.6);
+    transform: translateY(-2px);
 }
 
 /* ==================== HERO SECTION ==================== */
@@ -140,17 +146,19 @@ body {
 }
 
 .challenge-card {
-    background: var(--white);
+    background: linear-gradient(135deg, #1a2332, #0f1621);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 20px rgba(78, 205, 196, 0.2);
+    border: 1px solid rgba(78, 205, 196, 0.2);
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .challenge-card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 30px rgba(78, 205, 196, 0.3);
+    border-color: rgba(78, 205, 196, 0.4);
 }
 
 .card-icon {
@@ -165,11 +173,11 @@ body {
 .challenge-card h3 {
     font-size: 1.3rem;
     margin-bottom: 0.5rem;
-    color: var(--text-dark);
+    color: #4ecdc4;
 }
 
 .challenge-card p {
-    color: var(--text-light);
+    color: #b0c4d8;
 }
 
 /* ==================== 3D MODEL SECTION ==================== */
@@ -244,7 +252,7 @@ body {
     padding: 0.75rem 0;
     padding-left: 2rem;
     position: relative;
-    color: var(--text-dark);
+    color: #d0dce8;
     font-size: 1.05rem;
 }
 
@@ -252,9 +260,10 @@ body {
     content: "✓";
     position: absolute;
     left: 0;
-    color: var(--primary-color);
+    color: #4ecdc4;
     font-weight: bold;
     font-size: 1.3rem;
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
 }
 
 .solution-visual {
@@ -285,16 +294,19 @@ body {
 }
 
 .team-card {
-    background: var(--white);
+    background: linear-gradient(135deg, #1a2332, #0f1621);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 20px rgba(78, 205, 196, 0.2);
+    border: 1px solid rgba(78, 205, 196, 0.2);
     text-align: center;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .team-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(78, 205, 196, 0.3);
+    border-color: rgba(78, 205, 196, 0.4);
 }
 
 .team-avatar {
@@ -309,11 +321,11 @@ body {
 .team-card h3 {
     font-size: 1.25rem;
     margin-bottom: 0.5rem;
-    color: var(--text-dark);
+    color: #e0e8f0;
 }
 
 .team-role {
-    color: var(--text-light);
+    color: #8fa8c0;
     font-style: italic;
 }
 
@@ -375,15 +387,15 @@ body {
 
 /* ==================== FOOTER ==================== */
 .footer {
-    background-color: var(--dark-bg);
-    color: var(--white);
+    background-color: #0a0e1a;
+    color: #b0c0d0;
     text-align: center;
     padding: 3rem 2rem;
 }
 
 .footer p {
     margin: 0.5rem 0;
-    opacity: 0.8;
+    opacity: 0.9;
 }
 
 /* ==================== RESPONSIVE ==================== */
