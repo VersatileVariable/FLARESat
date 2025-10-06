@@ -57,23 +57,27 @@ function initFadeAnimations() {
 let scene, camera, renderer, earth, satellites = [], orbitLines = [];
 let fires = [];
 let detectionLines = [];
-let satelliteLinks = []; // Array to store inter-satellite link lines
+let satelliteLinks = [];
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
 let autoRotate = true;
 let confirmatingSatellites = [];
 let weatherClouds = [];
-let earthTextureData = null; // Store texture pixel data for land detection
+let earthTextureData = null;
 let earthTextureLoaded = false;
-let simulationStarted = false; // Track if simulation has started
-let animationFrameId = null; // Store animation frame ID for pausing
+let simulationStarted = false;
+let animationFrameId = null;
 
 // Configuration for inter-satellite links
-const ENABLE_SAT_LINKS = true; // Toggle satellite links on/off
-const SAT_LINK_DISTANCE = 3.5; // Maximum distance for satellite links (in scene units) - more lenient
-const SAT_LINK_COLOR = 0x4ecdc4; // Cyan color for links
-const SAT_LINK_OPACITY = 0.3; // Semi-transparent links
-const MAX_LINKS_PER_SAT = 3; // Maximum 2-3 links per satellite, judged by distance
+const ENABLE_SAT_LINKS = false; // Disabled by default for performance
+const SAT_LINK_DISTANCE = 3.5;
+const SAT_LINK_COLOR = 0x4ecdc4;
+const SAT_LINK_OPACITY = 0.3;
+const MAX_LINKS_PER_SAT = 3;
+
+// Memory optimization: Reuse geometries and materials
+const sharedGeometries = {};
+const sharedMaterials = {};
 
 function initHero3D() {
     const container = document.querySelector('.hero-background');
@@ -87,9 +91,8 @@ function initHero3D() {
         0.1,
         1000
     );
-    // Position camera higher up for better view
-    camera.position.set(0, -20, 15);  // Camera moved up
-    camera.lookAt(0, -20, 0);  // Look at Earth center
+    camera.position.set(0, -20, 15);
+    camera.lookAt(0, -20, 0);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true,
@@ -107,45 +110,36 @@ function initHero3D() {
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
 
-    // ========== EARTH SPHERE ==========
-    // Main Earth sphere with realistic texture map showing continents and oceans
     const earthGeometry = new THREE.SphereGeometry(10, 64, 64);
     
-    // Create Earth material first with a temporary blue color
     const earthMaterial = new THREE.MeshPhongMaterial({
-        color: 0x4a90e2,            // Blue ocean color as default
-        shininess: 15,              // Reduced glossiness to minimize glare
-        specular: 0x111111,         // Minimal specular highlights
+        color: 0x4a90e2,
+        shininess: 15,
+        specular: 0x111111,
     });
     
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
     earth.position.y = -30;
-    // Rotate Earth down and slightly right
-    earth.rotation.x = -Math.PI / 12; // 15 degrees down
-    earth.rotation.y = Math.PI / 17; // 15 degrees right
+    earth.rotation.x = -Math.PI / 12;
+    earth.rotation.y = Math.PI / 17;
     earth.rotation.z = 0;
     scene.add(earth);
     
-    // Load Earth texture - using reliable CDN source
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin('anonymous'); // Enable CORS
+    textureLoader.setCrossOrigin('anonymous');
     
     textureLoader.load(
-        // Using simple two-color Earth map (blue ocean, green/brown land)
         'https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg',
-        // Success callback - apply texture and extract pixel data for land detection
         (texture) => {
             console.log('Earth texture loaded successfully!');
             console.log('Texture dimensions:', texture.image.width, 'x', texture.image.height);
             
-            // Apply the texture to the material
             earthMaterial.map = texture;
-            earthMaterial.color.setHex(0xffffff); // Reset to white to show true texture colors
+            earthMaterial.color.setHex(0xffffff);
             earthMaterial.needsUpdate = true;
             
             console.log('Texture applied to Earth material');
             
-            // Create canvas to read pixel data for land detection
             try {
                 const canvas = document.createElement('canvas');
                 const img = texture.image;
@@ -161,14 +155,12 @@ function initHero3D() {
                 earthTextureLoaded = false;
             }
         },
-        // Progress callback
         (xhr) => {
             if (xhr.lengthComputable) {
                 const percentComplete = xhr.loaded / xhr.total * 100;
                 console.log('Loading texture:', percentComplete.toFixed(2) + '% loaded');
             }
         },
-        // Error callback
         (error) => {
             console.error('Error loading Earth texture:', error);
             console.log('Keeping blue fallback color for Earth');
@@ -176,86 +168,17 @@ function initHero3D() {
         }
     );
 
-    // ========== DARK AURA - ATMOSPHERIC GLOW ==========
-    // This creates the dark blue/purple halo effect around Earth that simulates the atmosphere
-    // The sphere is slightly larger than Earth and uses BackSide rendering to create an outer glow
-    // Note: Currently removed for cleaner look, but code preserved for reference
-    // Uncomment the following block to enable the atmospheric aura:
-    /*
-    const atmosphereGeometry = new THREE.SphereGeometry(10.4, 64, 64);  // Slightly larger than Earth (10.4 vs 10)
-    const atmosphereMaterial = new THREE.MeshBasicMaterial({
-        color: 0x667eea,              // Purple-blue atmosphere color
-        transparent: true,             // Must be transparent to show Earth beneath
-        opacity: 0.25,                 // Low opacity for subtle glow effect
-        side: THREE.BackSide          // DARK AURA: Renders only the inside faces, creating outer glow from within
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.position.y = -25;       // Same Y position as Earth
-    scene.add(atmosphere);
-
-    // Optional: Additional outer glow layer for enhanced atmospheric depth
-    const outerGlowGeometry = new THREE.SphereGeometry(11, 64, 64);     // Even larger sphere for extended glow
-    const outerGlowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x667eea,              // Same purple-blue color
-        transparent: true,
-        opacity: 0.1,                 // Very subtle outer layer
-        side: THREE.BackSide          // DARK AURA: BackSide rendering creates the halo effect
-    });
-    const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
-    outerGlow.position.y = -25;
-    scene.add(outerGlow);
-    */
-
-
     createEarthDetails();
     createEquator();
 
-    // ========== WALKER DELTA CONSTELLATION: 56°:1000/20/1 ==========
-    // Based on Walker Delta pattern notation i:t/p/f (similar to Galileo navigation system):
-    // i = 56° inclination (tilt of orbital plane relative to Earth's equator)
-    // t = 1000 total satellites
-    // p = 20 orbital planes  
-    // f = 1 phasing factor (relative shift of satellites in adjacent planes)
-    //
-    // Walker Delta Characteristics:
-    // • Provides consistent GLOBAL COVERAGE by distributing satellites across Earth's surface
-    // • Satellites placed in multiple, equally spaced orbital planes
-    // • "Delta" phasing creates DIAMOND-SHAPED coverage pattern near the equator
-    // • Adjacent planes have satellites offset (phased) from each other
-    // • Each plane rotated around Earth's Z-axis by angle of 2π/p (360°/20 = 18°)
-    //
-    // Key Features:
-    // • 1000 Satellites Total - 50 satellites evenly distributed in each of the 20 orbital planes
-    // • 20 Orbital Planes - Each plane separated by 18° RAAN (Right Ascension of Ascending Node)
-    // • 56° Inclination - Common angle for LEO constellations, provides good global coverage
-    //   while avoiding polar regions (similar to Galileo's 56°:24/3/1 configuration)
-    // • Orbital Altitude - ~500-550 km (represented as radius 14 units in simulation)
-    // • Phasing Factor f=1 - Satellites in adjacent planes offset by (f × 360°) / t
-    //   This creates the characteristic delta pattern with optimal coverage gaps
-    // • Uniform Distribution - Equal spacing within planes and coordinated spacing between planes
-    //
-    // Generation Process:
-    // 1. Start with basic inclined orbit at 56°
-    // 2. Replicate orbit 20 times (p=20 planes)
-    // 3. Rotate each plane by 2π/p around Z-axis (18° increments)
-    // 4. Apply phasing offset to satellites in successive planes (slot offset)
-    //
-    // This constellation provides:
-    // ✓ Consistent global coverage (Walker Delta ensures minimal gaps)
-    // ✓ Diamond-shaped coverage pattern for efficient Earth monitoring
-    // ✓ Similar to Galileo (56°:24/3/1) and GPS navigation systems
-    // ✓ Optimal for global fire detection with rapid revisit times
-    // ✓ Highly scalable design following established satellite navigation patterns
-    
     const totalSatellites = 1000;
     const numPlanes = 20;
-    const satellitesPerPlane = totalSatellites / numPlanes; // 50 satellites per plane
-    const inclination = 56 * (Math.PI / 180); // 56° inclination (Walker Delta standard)
-    const orbitRadius = 14; // ~500-550 km altitude
-    const orbitSpeed = 0.0003; // Slower orbital speed (was 0.0006)
-    const phasingFactor = 1; // Phase offset between planes (f=1 in Walker notation)
+    const satellitesPerPlane = totalSatellites / numPlanes;
+    const inclination = 56 * (Math.PI / 180);
+    const orbitRadius = 14;
+    const orbitSpeed = 0.00015; // Slowed down from 0.0003 (50% speed)
+    const phasingFactor = 1;
     
-    // Color palette for 20 orbital planes
     const colors = [
         0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 0xffa07a,
         0x98d8c8, 0xf7b731, 0xeb4d4b, 0x6ab04c, 0x00a8ff,
@@ -264,21 +187,16 @@ function initHero3D() {
     ];
 
     for (let plane = 0; plane < numPlanes; plane++) {
-        // Calculate RAAN (Right Ascension of Ascending Node) for each plane
-        // Walker Delta: Each plane rotated around Earth's Z-axis by 2π/p
-        const raan = (plane * 2 * Math.PI) / numPlanes; // 360° / 20 planes = 18° spacing
+        const raan = (plane * 2 * Math.PI) / numPlanes;
         
-        // Create orbit line for this plane
         const orbitPoints = [];
         for (let i = 0; i <= 100; i++) {
             const angle = (i / 100) * Math.PI * 2;
             
-            // Position in orbital plane
             const xOrbit = orbitRadius * Math.cos(angle);
             const yOrbit = orbitRadius * Math.sin(angle) * Math.sin(inclination);
             const zOrbit = orbitRadius * Math.sin(angle) * Math.cos(inclination);
             
-            // Rotate by RAAN to position the plane
             const x = xOrbit * Math.cos(raan) - zOrbit * Math.sin(raan);
             const y = yOrbit;
             const z = xOrbit * Math.sin(raan) + zOrbit * Math.cos(raan);
@@ -297,39 +215,19 @@ function initHero3D() {
         earth.add(orbitLine);
         orbitLines.push({ line: orbitLine, baseOpacity: 0.4 });
 
-        // Place satellites evenly in this orbital plane
         for (let sat = 0; sat < satellitesPerPlane; sat++) {
             const satellite = createSatellite(colors[plane], 0.1);
             
-            // ========== COLLISION AVOIDANCE: WALKER DELTA PHASING ==========
-            // Calculate initial angle with Walker Delta constellation phasing
-            // This formula PREVENTS COLLISIONS by offsetting satellites in adjacent planes
-            //
-            // Proper Walker Delta Phasing Formula:
-            // For Walker Delta i:t/p/f notation, the true anomaly (angle) for each satellite is:
-            // θ = (360° × s / satellitesPerPlane) + (360° × f × planeIndex / totalSatellites)
-            // 
-            // This creates a SPIRAL/ROSETTE pattern where:
-            // 1. Base angle: evenly space satellites within the plane (s/satellitesPerPlane)
-            //    → Satellite 0: 0°, Satellite 1: 7.2°, Satellite 2: 14.4°, etc.
-            // 2. Phase offset: offset each plane by (f × planeIndex / totalSatellites) full revolutions
-            //    → Plane 0: +0°, Plane 1: +0.36°, Plane 2: +0.72°, Plane 3: +1.08°, etc.
-            //    → This is MUCH smaller than the 7.2° in-plane spacing (0.36° vs 7.2°)
-            // 3. RAAN rotation: each plane rotated 18° around Earth's axis
-            //    → Combined with subtle phase offset creates optimal collision-free pattern
-            //
-            // Result: Adjacent planes are offset by tiny increments (1/totalSatellites of a full orbit)
-            // This creates maximum separation at orbital plane intersections
-            const baseAngle = (sat * 2 * Math.PI) / satellitesPerPlane; // 0°, 7.2°, 14.4°, 21.6°, etc.
-            const phaseOffset = (phasingFactor * plane * 2 * Math.PI) / totalSatellites; // 0.36° × plane_number (1/1000 revolution per plane)
-            const initialAngle = baseAngle + phaseOffset; // Combined: subtle spiral prevents collisions
+            const baseAngle = (sat * 2 * Math.PI) / satellitesPerPlane;
+            const phaseOffset = (phasingFactor * plane * 2 * Math.PI) / totalSatellites;
+            const initialAngle = baseAngle + phaseOffset;
             
             satellite.userData = {
                 orbitRadius: orbitRadius,
                 speed: orbitSpeed,
                 angle: initialAngle,
                 inclination: inclination,
-                raan: raan, // Store RAAN for proper orbit calculation
+                raan: raan,
                 orbitColor: colors[plane],
                 plane: plane,
                 isConfirming: false,
@@ -354,22 +252,17 @@ function initHero3D() {
 
     window.addEventListener('resize', onHeroResize);
 
-    // Don't start animation automatically - wait for scroll
-    // animateHero() will be called when user scrolls down
-
-    // Spawn new fires every 1 second for continuous action (but only if simulation started)
     setInterval(() => {
         if (simulationStarted) {
             spawnRandomFire();
         }
-    }, 1000);
+    }, 2000);
     
-    // Spawn new weather clouds every 5 seconds (but only if simulation started)
     setInterval(() => {
         if (simulationStarted) {
             spawnWeatherCloud();
         }
-    }, 5000);
+    }, 8000);
 }
 
 function createEarthDetails() {
@@ -410,8 +303,7 @@ function createEarthDetails() {
 }
 
 function createEquator() {
-    // Create a bright equator line at y = 0 (relative to Earth center)
-    const equatorRadius = 10.02; // Just slightly above Earth surface to avoid z-fighting
+    const equatorRadius = 10.02;
     const equatorPoints = [];
     
     for (let i = 0; i <= 100; i++) {
@@ -423,19 +315,18 @@ function createEquator() {
     
     const equatorGeometry = new THREE.BufferGeometry().setFromPoints(equatorPoints);
     const equatorMaterial = new THREE.LineBasicMaterial({
-        color: 0xffff00, // Bright yellow for visibility
+        color: 0xffff00,
         transparent: true,
         opacity: 0.9,
         linewidth: 3,
-        depthTest: true, // Enable depth testing so it doesn't show through Earth
+        depthTest: true,
         depthWrite: true
     });
     
     const equatorLine = new THREE.Line(equatorGeometry, equatorMaterial);
     earth.add(equatorLine);
     
-    // Add "EQUATOR" text labels at 0° and 180°
-    const labelPositions = [0, Math.PI]; // 0 degrees and 180 degrees
+    const labelPositions = [0, Math.PI];
     
     labelPositions.forEach((angle) => {
         const canvas = document.createElement('canvas');
@@ -443,17 +334,14 @@ function createEquator() {
         canvas.width = 512;
         canvas.height = 128;
         
-        // Draw text
         context.fillStyle = 'rgba(255, 255, 0, 0.95)';
         context.font = 'Bold 56px Arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.fillText('EQUATOR', 256, 64);
         
-        // Create texture from canvas
         const texture = new THREE.CanvasTexture(canvas);
         
-        // Create a plane geometry for the text
         const textGeometry = new THREE.PlaneGeometry(3, 0.75);
         const textMaterial = new THREE.MeshBasicMaterial({ 
             map: texture,
@@ -464,105 +352,95 @@ function createEquator() {
         });
         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
         
-        // Position the text above the equator line to avoid overlap
         const labelRadius = 10.05;
         textMesh.position.set(
             labelRadius * Math.cos(angle),
-            0.5, // Position above the equator line
+            0.5,
             labelRadius * Math.sin(angle)
         );
         
-        // Rotate to be readable and tangent to the equator
-        textMesh.rotation.y = angle + Math.PI / 2; // Face outward and tangent to circle
+        textMesh.rotation.y = angle + Math.PI / 2;
         
         earth.add(textMesh);
     });
 }
 
 function createFires() {
-    // Spawn more initial fires for better visual impact
-    // Wait longer to ensure texture is fully loaded and processed
     setTimeout(() => {
         console.log('Starting initial fire spawn. Texture loaded:', earthTextureLoaded);
         if (!earthTextureLoaded) {
             console.error('WARNING: Texture still not loaded after 5 seconds!');
-            return; // Don't spawn fires if texture not loaded
+            return;
         }
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 15; i++) {
             spawnRandomFire();
         }
-    }, 5000); // Increased to 5 seconds to ensure texture is ready
+    }, 5000);
 }
 
 function createWeatherClouds() {
-    // Create initial weather clouds that satellites must see through
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 4; i++) {
         spawnWeatherCloud();
     }
 }
 
 function spawnWeatherCloud() {
-    // Limit number of weather clouds
-    if (weatherClouds.length > 20) {
+    if (weatherClouds.length > 15) {
         const oldCloud = weatherClouds.shift();
+        oldCloud.mesh.children.forEach(puff => {
+            if (puff.geometry) puff.geometry.dispose();
+            if (puff.material) puff.material.dispose();
+        });
         earth.remove(oldCloud.mesh);
     }
 
-    // OPTIMIZATION: Only spawn clouds on visible (camera-facing) hemisphere
-    const maxLatitude = 70 * (Math.PI / 180); // Weather clouds can appear up to ±70°
+    const maxLatitude = 70 * (Math.PI / 180);
     
-    // Calculate camera direction in Earth's local space (accounting for Earth rotations)
+    // Get camera direction to only spawn on visible side
     const cameraWorldPos = camera.position.clone();
     const earthWorldPos = earth.position.clone();
     const cameraToEarth = new THREE.Vector3().subVectors(earthWorldPos, cameraWorldPos).normalize();
     
-    // Transform camera direction into Earth's local coordinate system
     const earthInverseMatrix = new THREE.Matrix4().copy(earth.matrix).invert();
     const cameraLocalDir = cameraToEarth.clone().applyMatrix4(earthInverseMatrix).normalize();
     
-    // Calculate longitude range centered on camera view (±90° from camera direction)
+    // Only spawn on visible hemisphere (front side)
     const cameraPhi = Math.atan2(cameraLocalDir.z, cameraLocalDir.x);
-    const minLon = cameraPhi - Math.PI / 2;
-    const maxLon = cameraPhi + Math.PI / 2;
+    const minLon = cameraPhi - Math.PI / 3; // Narrower range (120 degrees instead of 180)
+    const maxLon = cameraPhi + Math.PI / 3;
     
     const lat = (Math.random() - 0.5) * 2 * maxLatitude;
     const lon = minLon + Math.random() * (maxLon - minLon);
-    const radius = 10.5; // Higher in atmosphere (was 10.15)
+    const radius = 10.5;
     
-    // Create organic cloud using multiple overlapping spheres with varied sizes and clustering
     const cloudGroup = new THREE.Group();
-    const numPuffs = 8 + Math.floor(Math.random() * 8); // 8-15 cloud puffs for more organic look
+    const numPuffs = 5 + Math.floor(Math.random() * 5);
     
-    // Create main cluster center point for more natural grouping
     const clusterCenterX = (Math.random() - 0.5) * 0.3;
     const clusterCenterY = (Math.random() - 0.5) * 0.1;
     const clusterCenterZ = (Math.random() - 0.5) * 0.3;
     
     for (let i = 0; i < numPuffs; i++) {
-        // Use DodecahedronGeometry for more organic, rounded shapes
-        // Mix of detail levels and sizes for natural variation
-        const size = 0.15 + Math.random() * 0.35; // Wider size range: 0.15-0.5
-        const detail = Math.random() > 0.5 ? 0 : 1; // Mix of smooth and slightly angular
+        const size = 0.15 + Math.random() * 0.35;
+        const detail = 0;
         
         const puffGeometry = new THREE.DodecahedronGeometry(size, detail);
         
-        // Vary opacity for depth - some puffs more transparent
-        const baseOpacity = 0.7 + Math.random() * 0.25; // Range: 0.7-0.95
+        const baseOpacity = 0.7 + Math.random() * 0.25;
         const puffMaterial = new THREE.MeshPhongMaterial({
             color: 0xffffff,
             transparent: true,
             opacity: baseOpacity,
-            shininess: 15 + Math.random() * 10, // Varied shininess: 15-25
+            shininess: 15 + Math.random() * 10,
             emissive: 0xffffff,
-            emissiveIntensity: 0.2 + Math.random() * 0.15, // Varied glow: 0.2-0.35
-            flatShading: false // Smooth shading for organic look
+            emissiveIntensity: 0.2 + Math.random() * 0.15,
+            flatShading: false
         });
         const puff = new THREE.Mesh(puffGeometry, puffMaterial);
         
-        // Cluster puffs around center with exponential falloff for natural grouping
-        const distanceFromCenter = Math.pow(Math.random(), 1.5); // Bias toward center
-        const angle = Math.random() * Math.PI * 2; // Random direction
-        const verticalSpread = (Math.random() - 0.5) * 0.4; // Vertical variation
+        const distanceFromCenter = Math.pow(Math.random(), 1.5);
+        const angle = Math.random() * Math.PI * 2;
+        const verticalSpread = (Math.random() - 0.5) * 0.4;
         
         puff.position.set(
             clusterCenterX + Math.cos(angle) * distanceFromCenter * 1.2,
@@ -570,13 +448,11 @@ function spawnWeatherCloud() {
             clusterCenterZ + Math.sin(angle) * distanceFromCenter * 1.2
         );
         
-        // Irregular scaling for organic shapes (squash and stretch)
-        const scaleX = 0.8 + Math.random() * 0.6; // 0.8-1.4
-        const scaleY = 0.7 + Math.random() * 0.5; // 0.7-1.2 (flatter)
-        const scaleZ = 0.8 + Math.random() * 0.6; // 0.8-1.4
+        const scaleX = 0.8 + Math.random() * 0.6;
+        const scaleY = 0.7 + Math.random() * 0.5;
+        const scaleZ = 0.8 + Math.random() * 0.6;
         puff.scale.set(scaleX, scaleY, scaleZ);
         
-        // Random rotation for more variation
         puff.rotation.set(
             Math.random() * Math.PI * 2,
             Math.random() * Math.PI * 2,
@@ -586,7 +462,6 @@ function spawnWeatherCloud() {
         cloudGroup.add(puff);
     }
     
-    // Position cloud higher in atmosphere
     const x = radius * Math.cos(lat) * Math.cos(lon);
     const z = radius * Math.cos(lat) * Math.sin(lon);
     const y = radius * Math.sin(lat);
@@ -596,15 +471,14 @@ function spawnWeatherCloud() {
     
     earth.add(cloudGroup);
     
-    // Store individual puff data for wind animation
     const puffData = [];
     cloudGroup.children.forEach((puff, i) => {
         puffData.push({
             originalPos: puff.position.clone(),
             originalScale: puff.scale.clone(),
-            windPhase: Math.random() * Math.PI * 2, // Random starting phase
-            windAmplitude: 0.05 + Math.random() * 0.1, // How much it moves
-            windSpeed: 0.8 + Math.random() * 0.4 // Individual speed variation
+            windPhase: Math.random() * Math.PI * 2,
+            windAmplitude: 0.05 + Math.random() * 0.1,
+            windSpeed: 0.8 + Math.random() * 0.4
         });
     });
     
@@ -614,41 +488,34 @@ function spawnWeatherCloud() {
         lat: lat,
         lon: lon,
         radius: radius,
-        driftSpeed: 0.0001 + Math.random() * 0.0001, // Wind drift speed
-        driftAngle: Math.random() * Math.PI * 2, // Wind direction
-        windTurbulence: 0.00008 + Math.random() * 0.00012, // Turbulence variation
-        windGustPhase: Math.random() * Math.PI * 2, // For wind gusts
-        stretchDirection: Math.random() * Math.PI * 2, // Direction cloud stretches
+        driftSpeed: 0.00005 + Math.random() * 0.00005, // Slowed down from 0.0001-0.0002 (50% speed)
+        driftAngle: Math.random() * Math.PI * 2,
+        windTurbulence: 0.00004 + Math.random() * 0.00006, // Slowed down (50% speed)
+        windGustPhase: Math.random() * Math.PI * 2,
+        stretchDirection: Math.random() * Math.PI * 2,
         life: 0,
-        maxLife: 60000 + Math.random() * 60000, // 60-120 seconds
-        puffData: puffData // Store puff animation data
+        maxLife: 60000 + Math.random() * 60000,
+        puffData: puffData
     };
     
     weatherClouds.push(cloudData);
 }
 
-// Helper function to check if a lat/lon coordinate is on land
 function isOnLand(lat, lon) {
     if (!earthTextureLoaded || !earthTextureData) {
         console.warn('Texture not loaded yet! earthTextureLoaded:', earthTextureLoaded, 'earthTextureData:', !!earthTextureData);
-        return false; // CHANGED: Don't allow fires if texture isn't loaded yet
+        return false;
     }
     
-    // Convert lat/lon to texture UV coordinates
-    // Longitude: -180° to 180° maps to 0 to 1 (U)
-    // Latitude: 90° to -90° maps to 0 to 1 (V)
     const u = (lon / (Math.PI * 2) + 0.5) % 1.0;
     const v = 0.5 - (lat / Math.PI);
     
-    // Get pixel coordinates
     const x = Math.floor(u * earthTextureData.width);
     const y = Math.floor(v * earthTextureData.height);
     
-    // Helper function to check if a pixel is water (PRECISE COLOR MATCHING)
     const isWaterAtPixel = (px, py) => {
-        // Boundary check
         if (px < 0 || px >= earthTextureData.width || py < 0 || py >= earthTextureData.height) {
-            return true; // Treat boundary as water to be safe
+            return true;
         }
         
         const idx = (py * earthTextureData.width + px) * 4;
@@ -656,138 +523,123 @@ function isOnLand(lat, lon) {
         const pg = earthTextureData.data[idx + 1];
         const pb = earthTextureData.data[idx + 2];
         
-        // Check for ocean color #006099 (RGB: 0, 96, 153)
-        // Allow small tolerance: R≤5, G=90-102, B=145-160
         if (pr <= 5 && pg >= 90 && pg <= 102 && pb >= 145 && pb <= 160) {
-            return true; // Matches ocean color #006099
+            return true;
         }
         
-        // Not ocean
         return false;
     };
     
-    // Get pixel color (RGBA) at center point
     const index = (y * earthTextureData.width + x) * 4;
     const r = earthTextureData.data[index];
     const g = earthTextureData.data[index + 1];
     const b = earthTextureData.data[index + 2];
     
-    // STRICT OCEAN/WATER REJECTION - Reject ALL blue-tinted pixels
-    // Any pixel where blue is significantly higher than red OR green is water
     if (b > r + 10 || b > g + 10) {
-        return false; // Blue-dominant = ocean/water (stricter threshold)
+        return false;
     }
     
-    // Reject any pixel that has high blue value relative to other channels
     if (b >= 70 && (b > r || b > g)) {
-        return false; // High blue = likely water (lower threshold)
+        return false;
     }
     
-    // Additional check: reject if blue is dominant in any way
     if (b > r && b > g && b >= 60) {
-        return false; // Blue is the dominant channel = water
+        return false;
     }
     
-    // Reject very dark or very light pixels (ice, clouds, deep water)
     const brightness = (r + g + b) / 3;
     if (brightness < 50 || brightness > 220) {
-        return false; // Too dark or too bright
+        return false;
     }
     
-    // ONLY accept land colors (greens and beiges/browns)
-    // Green vegetation: G is dominant, R and B are lower
     const isGreen = (g > r + 15 && g > b + 15 && g >= 70 && g <= 180);
-    // Beige/brown/tan (dry land, deserts, mountains): R and G similar, B much lower
     const isBeige = (r >= 90 && g >= 70 && b >= 30 && b < r - 15 && b < g && Math.abs(r - g) < 60);
     
     if (!isGreen && !isBeige) {
-        return false; // Not a target land color
+        return false;
     }
     
-    // Check buffer zone - no water nearby
-    const bufferSize = 5; // Larger buffer for safety
+    const bufferSize = 5;
     for (let dy = -bufferSize; dy <= bufferSize; dy++) {
         for (let dx = -bufferSize; dx <= bufferSize; dx++) {
             if (isWaterAtPixel(x + dx, y + dy)) {
-                return false; // Too close to water
+                return false;
             }
         }
     }
     
-    // Passed all checks - it's definitely green or beige land, far from water
     return true;
 }
 
 function spawnRandomFire() {
-    // Allow up to 40 fires at once for more dramatic effect
-    if (fires.length > 40) {
+    if (fires.length > 8) {
         const oldFire = fires.shift();
+        if (oldFire.marker.geometry) oldFire.marker.geometry.dispose();
+        if (oldFire.marker.material) oldFire.marker.material.dispose();
+        if (oldFire.glow.geometry) oldFire.glow.geometry.dispose();
+        if (oldFire.glow.material) oldFire.glow.material.dispose();
+        
         earth.remove(oldFire.marker);
         earth.remove(oldFire.glow);
-        // Remove smoke clouds
         if (oldFire.smokeClouds) {
-            oldFire.smokeClouds.forEach(cloud => earth.remove(cloud));
+            oldFire.smokeClouds.forEach(cloud => {
+                if (cloud.geometry) cloud.geometry.dispose();
+                if (cloud.material) cloud.material.dispose();
+                earth.remove(cloud);
+            });
         }
     }
 
-    const fireGeometry = new THREE.CircleGeometry(0.15, 8);
+    if (!sharedGeometries.fire) {
+        sharedGeometries.fire = new THREE.CircleGeometry(0.15, 8);
+        sharedGeometries.fireGlow = new THREE.CircleGeometry(0.28, 8);
+    }
+    
     const fireMaterial = new THREE.MeshBasicMaterial({ 
         color: 0xff4444,
         transparent: true,
         opacity: 0.95
     });
-    const fireMarker = new THREE.Mesh(fireGeometry, fireMaterial);
+    const fireMarker = new THREE.Mesh(sharedGeometries.fire, fireMaterial);
     
-    const glowGeometry = new THREE.CircleGeometry(0.28, 8);
     const glowMaterial = new THREE.MeshBasicMaterial({ 
         color: 0xff6b6b,
         transparent: true,
         opacity: 0.5
     });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    const glow = new THREE.Mesh(sharedGeometries.fireGlow, glowMaterial);
     
-    // Restrict fires to ±56° latitude (matching 56° Walker Delta constellation coverage)
-    const maxLatitude = 56 * (Math.PI / 180); // 56 degrees in radians (matches inclination)
+    const maxLatitude = 56 * (Math.PI / 180);
     
-    // OPTIMIZATION: Only spawn fires on visible (camera-facing) hemisphere
-    // Calculate camera direction in Earth's local space (accounting for Earth rotations)
+    // Get camera direction to only spawn on visible side
     const cameraWorldPos = camera.position.clone();
     const earthWorldPos = earth.position.clone();
     const cameraToEarth = new THREE.Vector3().subVectors(earthWorldPos, cameraWorldPos).normalize();
     
-    // Transform camera direction into Earth's local coordinate system
     const earthInverseMatrix = new THREE.Matrix4().copy(earth.matrix).invert();
     const cameraLocalDir = cameraToEarth.clone().applyMatrix4(earthInverseMatrix).normalize();
     
-    // Calculate longitude range centered on camera view (±90° from camera direction)
+    // Only spawn fires on visible hemisphere (narrower range)
     const cameraPhi = Math.atan2(cameraLocalDir.z, cameraLocalDir.x);
-    const minLon = cameraPhi - Math.PI / 2;
-    const maxLon = cameraPhi + Math.PI / 2;
-    const lonRange = maxLon - minLon; // Total range (π radians = 180°)
+    const minLon = cameraPhi - Math.PI / 3; // Narrower: 120 degrees total instead of 180
+    const maxLon = cameraPhi + Math.PI / 3;
+    const lonRange = maxLon - minLon;
     
-    // Try up to 50 times to find a land location
     let lat, lon;
     let attempts = 0;
     let foundLand = false;
     
     while (attempts < 50 && !foundLand) {
-        lat = (Math.random() - 0.5) * 2 * maxLatitude; // Random latitude between -56° and +56°
+        lat = (Math.random() - 0.5) * 2 * maxLatitude;
         
-        // Weighted longitude distribution:
-        // Center 50% (0.25 to 0.75 of range) = 92% probability (much more frequent!)
-        // Left side 25% (0 to 0.25) = 6% probability  
-        // Right side 25% (0.75 to 1.0) = 2% probability
         const rand = Math.random();
         let lonFraction;
         
         if (rand < 0.92) {
-            // 92% in center 50% - MUCH more frequent center fires!
             lonFraction = 0.25 + Math.random() * 0.5;
         } else if (rand < 0.98) {
-            // 6% in left 25%
             lonFraction = Math.random() * 0.25;
         } else {
-            // 2% in right 25%
             lonFraction = 0.75 + Math.random() * 0.25;
         }
         
@@ -799,9 +651,8 @@ function spawnRandomFire() {
         attempts++;
     }
     
-    // If we couldn't find land after 50 attempts, skip this fire spawn
     if (!foundLand) {
-        return; // Exit without spawning fire
+        return;
     }
     
     const radius = 10.08;
@@ -821,28 +672,24 @@ function spawnRandomFire() {
     earth.add(fireMarker);
     earth.add(glow);
     
-    // Randomly determine if this fire produces smoke (50% chance)
     const hasSmoke = Math.random() > 0.5;
     const smokeClouds = [];
     
     if (hasSmoke) {
-        // Create smoke clouds that rise from the fire
         const numSmokeClouds = 5;
         
         for (let i = 0; i < numSmokeClouds; i++) {
-            // Use IcosahedronGeometry with low detail (0-1) for angular, polygon look
             const smokeGeometry = new THREE.IcosahedronGeometry(0.2 + i * 0.08, Math.floor(Math.random() * 2));
             const smokeMaterial = new THREE.MeshBasicMaterial({
                 color: 0x666666,
                 transparent: true,
                 opacity: 0.3 - i * 0.04,
-                depthTest: true,  // Ensure smoke doesn't obstruct orbit lines
-                depthWrite: false, // Allow transparency to work correctly
-                flatShading: true  // Makes polygons more visible/angular
+                depthTest: true,
+                depthWrite: false,
+                flatShading: true
             });
             const smokeCloud = new THREE.Mesh(smokeGeometry, smokeMaterial);
             
-            // Position smoke slightly above fire
             const smokeRadius = radius + 0.15 + i * 0.1;
             const smokeX = smokeRadius * Math.cos(lat) * Math.cos(lon);
             const smokeZ = smokeRadius * Math.cos(lat) * Math.sin(lon);
@@ -851,17 +698,17 @@ function spawnRandomFire() {
             smokeCloud.position.set(smokeX, smokeY, smokeZ);
             smokeCloud.userData = {
                 initialRadius: smokeRadius,
-                baseRadius: smokeRadius, // Store starting radius
-                maxHeight: radius + 0.8, // Limit smoke to stay closer to surface (max 0.8 units above Earth)
+                baseRadius: smokeRadius,
+                maxHeight: radius + 0.8,
                 lat: lat,
                 lon: lon,
-                riseSpeed: 0.0015 + Math.random() * 0.001, // Much slower rise (stays near surface)
-                driftAngle: Math.random() * Math.PI * 2, // Random drift direction
-                driftSpeed: 0.0003 + Math.random() * 0.0004, // Random drift magnitude
-                rotationSpeed: (Math.random() - 0.5) * 0.02, // Random rotation
-                turbulence: Math.random() * 0.002, // Adds organic wobble
-                initialOpacity: 0.35 - i * 0.05, // Store initial opacity
-                scaleVariation: 0.8 + Math.random() * 0.4, // Random size variation
+                riseSpeed: 0.0015 + Math.random() * 0.001,
+                driftAngle: Math.random() * Math.PI * 2,
+                driftSpeed: 0.0003 + Math.random() * 0.0004,
+                rotationSpeed: (Math.random() - 0.5) * 0.02,
+                turbulence: Math.random() * 0.002,
+                initialOpacity: 0.35 - i * 0.05,
+                scaleVariation: 0.8 + Math.random() * 0.4,
                 index: i
             };
             
@@ -873,11 +720,11 @@ function spawnRandomFire() {
     const fireData = { 
         marker: fireMarker, 
         glow: glow,
-        smokeClouds: hasSmoke ? smokeClouds : null, // Only add smoke if this fire has it
-        hasSmoke: hasSmoke, // Track whether this fire produces smoke
+        smokeClouds: hasSmoke ? smokeClouds : null,
+        hasSmoke: hasSmoke,
         position: new THREE.Vector3(x, y, z),
         life: 0,
-        maxLife: 30000 + Math.random() * 30000, // 30-60 seconds (much longer)
+        maxLife: 30000 + Math.random() * 30000,
         detected: false,
         confirming: false,
         confirmedBy: []
@@ -887,29 +734,41 @@ function spawnRandomFire() {
 }
 
 function createSatellite(color, scale) {
+    if (!sharedGeometries.satelliteBody) {
+        sharedGeometries.satelliteBody = new THREE.BoxGeometry(0.4, 0.2, 0.2);
+        sharedGeometries.satellitePanel = new THREE.BoxGeometry(0.8, 0.03, 0.4);
+    }
+    
     const satelliteGroup = new THREE.Group();
     
-    const bodyGeometry = new THREE.BoxGeometry(0.4 * scale, 0.2 * scale, 0.2 * scale);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xdddddd,
-        emissive: color,
-        emissiveIntensity: 0.3
-    });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    const bodyMaterialKey = `body_${color}`;
+    if (!sharedMaterials[bodyMaterialKey]) {
+        sharedMaterials[bodyMaterialKey] = new THREE.MeshPhongMaterial({ 
+            color: 0xdddddd,
+            emissive: color,
+            emissiveIntensity: 0.3
+        });
+    }
+    
+    const body = new THREE.Mesh(sharedGeometries.satelliteBody, sharedMaterials[bodyMaterialKey]);
+    body.scale.set(scale, scale, scale);
     satelliteGroup.add(body);
 
-    const panelGeometry = new THREE.BoxGeometry(0.8 * scale, 0.03 * scale, 0.4 * scale);
-    const panelMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0x1a4d8f,
-        shininess: 30
-    });
+    if (!sharedMaterials.panel) {
+        sharedMaterials.panel = new THREE.MeshPhongMaterial({ 
+            color: 0x1a4d8f,
+            shininess: 30
+        });
+    }
     
-    const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    const leftPanel = new THREE.Mesh(sharedGeometries.satellitePanel, sharedMaterials.panel);
     leftPanel.position.x = -0.6 * scale;
+    leftPanel.scale.set(scale, scale, scale);
     satelliteGroup.add(leftPanel);
     
-    const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    const rightPanel = new THREE.Mesh(sharedGeometries.satellitePanel, sharedMaterials.panel);
     rightPanel.position.x = 0.6 * scale;
+    rightPanel.scale.set(scale, scale, scale);
     satelliteGroup.add(rightPanel);
 
     return satelliteGroup;
@@ -942,27 +801,15 @@ function createStars() {
 }
 
 function setupHeroMouseControls() {
-    // Manual rotation controls removed - Earth rotates automatically only
-    // This prevents user interaction from interfering with the visualization
-    // ========== SCROLL HANDLING ==========
-    // NO wheel/scroll event listener on canvas to ensure page scrolling always works
-    // Mouse wheel will only scroll the page, not interact with the 3D Earth
-    // This ensures smooth page navigation without interference from the 3D model
 }
 
-// ========== INTER-SATELLITE LINKS ==========
-// Draws connecting lines between satellites that are close enough to communicate
-// This visualizes the mesh network that allows satellites to relay data
 function drawSatelliteLinks() {
-    // Track how many links each satellite has to limit connections
     const linkCounts = new Map();
     const potentialLinks = [];
     
-    // First pass: find all potential links and calculate distances
     for (let i = 0; i < satellites.length; i++) {
         const sat1 = satellites[i];
         
-        // OPTIMIZATION: Skip satellites on back hemisphere
         if (!sat1.visible) continue;
         
         linkCounts.set(i, 0);
@@ -970,45 +817,34 @@ function drawSatelliteLinks() {
         for (let j = i + 1; j < satellites.length; j++) {
             const sat2 = satellites[j];
             
-            // OPTIMIZATION: Skip if second satellite is not visible
             if (!sat2.visible) continue;
             
-            // Calculate distance between satellites
             const distance = sat1.position.distanceTo(sat2.position);
             
-            // More lenient distance check - allow connections within range
             if (distance <= SAT_LINK_DISTANCE) {
-                // Store all potential links within range
-                // Distance-based priority will naturally favor closest satellites
                 potentialLinks.push({ i, j, distance, sat1, sat2 });
             }
         }
     }
     
-    // Sort by distance (closest first) to prioritize nearest neighbors
     potentialLinks.sort((a, b) => a.distance - b.distance);
     
-    // Second pass: draw links, respecting the max links per satellite limit
     for (const link of potentialLinks) {
         const { i, j, distance, sat1, sat2 } = link;
         
-        // Check if either satellite has reached its link limit
         if (linkCounts.get(i) >= MAX_LINKS_PER_SAT || linkCounts.get(j) >= MAX_LINKS_PER_SAT) {
             continue;
         }
         
-        // Draw the link
-        // Create line geometry connecting the two satellites
         const linkGeometry = new THREE.BufferGeometry().setFromPoints([
             sat1.position.clone(),
             sat2.position.clone()
         ]);
         
-        // Create semi-transparent cyan line material
         const linkMaterial = new THREE.LineBasicMaterial({
             color: SAT_LINK_COLOR,
             transparent: true,
-            opacity: SAT_LINK_OPACITY * (1 - distance / SAT_LINK_DISTANCE), // Fade based on distance
+            opacity: SAT_LINK_OPACITY * (1 - distance / SAT_LINK_DISTANCE),
             linewidth: 1
         });
         
@@ -1016,7 +852,6 @@ function drawSatelliteLinks() {
         earth.add(linkLine);
         satelliteLinks.push(linkLine);
         
-        // Increment link count for both satellites
         linkCounts.set(i, linkCounts.get(i) + 1);
         if (!linkCounts.has(j)) linkCounts.set(j, 0);
         linkCounts.set(j, linkCounts.get(j) + 1);
@@ -1024,88 +859,57 @@ function drawSatelliteLinks() {
 }
 
 function animateHero() {
-    if (!simulationStarted) return; // Don't animate if not started
+    if (!simulationStarted) return;
     
     animationFrameId = requestAnimationFrame(animateHero);
 
     const time = Date.now();
 
-    // Earth is now stationary - no rotation
-    // earth.rotation.x += 0.0002; // Rotation disabled
-
-    // Clear old detection lines
     detectionLines.forEach(line => earth.remove(line));
     detectionLines = [];
     
-    // Clear old satellite link lines
     satelliteLinks.forEach(link => earth.remove(link));
     satelliteLinks = [];
 
     satellites.forEach(satellite => {
         const data = satellite.userData;
         
-        // Update orbital position
         data.angle += data.speed;
         
-        // Calculate position in orbital plane
         let xOrbit = data.orbitRadius * Math.cos(data.angle);
         let yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
         let zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
         
-        // Apply RAAN rotation
         let x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
         let y = yOrbit;
         let z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
         
-        // SEAMLESS LOOP: Despawn satellites going off-screen and respawn on incoming side
-        // When satellite moves behind Earth (z < -3), it's off-screen
-        // Respawn it on the opposite side where satellites are entering view
         if (z < -3) {
-            // Satellite has gone off-screen behind Earth
-            // Calculate where satellites are entering the visible hemisphere
-            // We want to place it on the opposite side of the orbit (180° away)
-            // But slightly ahead so it's entering view, not already leaving
-            
-            // Find the angle where satellites enter the visible hemisphere
-            // For a satellite at z = -3 boundary going off-screen,
-            // we want to respawn it at the z = 3+ boundary coming on-screen
-            
-            // Add 180° to flip to opposite side of orbit
             data.angle = data.angle + Math.PI;
             
-            // Normalize angle to 0-2π range to prevent overflow
             data.angle = data.angle % (Math.PI * 2);
             if (data.angle < 0) data.angle += Math.PI * 2;
             
-            // Recalculate position with respawn angle
             xOrbit = data.orbitRadius * Math.cos(data.angle);
             yOrbit = data.orbitRadius * Math.sin(data.angle) * Math.sin(data.inclination);
             zOrbit = data.orbitRadius * Math.sin(data.angle) * Math.cos(data.inclination);
             
-            // Apply RAAN rotation again
             x = xOrbit * Math.cos(data.raan) - zOrbit * Math.sin(data.raan);
             y = yOrbit;
             z = xOrbit * Math.sin(data.raan) + zOrbit * Math.cos(data.raan);
-            
-            // Debug: Verify respawn is on correct side
-            // console.log(`Satellite respawned: z = ${z.toFixed(2)} (should be > 0)`);
         }
         
         satellite.position.set(x, y, z);
         satellite.lookAt(0, 0, 0);
         
-        // OPTIMIZATION: Only show satellites on visible (front) hemisphere
-        // Check if satellite is on the camera-facing side (z > -3 for visible hemisphere)
         const isVisible = z > -3;
         satellite.visible = isVisible;
         
-        // Only check for fire detection if satellite is visible
         if (isVisible) {
             checkFireDetection(satellite);
         }
     });
     
-    // Draw inter-satellite links (mesh network visualization)
     if (ENABLE_SAT_LINKS) {
         drawSatelliteLinks();
     }
@@ -1122,58 +926,45 @@ function animateHero() {
         fire.marker.material.opacity = 0.95 * pulse;
         fire.glow.material.opacity = 0.5 * pulse;
         
-        // Animate smoke clouds rising and dissipating with organic movement
-        // Only animate if this fire has smoke
         if (fire.hasSmoke && fire.smokeClouds) {
             fire.smokeClouds.forEach((cloud, cloudIndex) => {
                 const userData = cloud.userData;
                 const ageProgress = fire.life / fire.maxLife;
                 
-                // Rise upward from fire with slower acceleration
                 userData.initialRadius += userData.riseSpeed * (1 + ageProgress * 0.3);
                 
-                // Clamp smoke to max height (don't let it go too far into atmosphere)
                 userData.initialRadius = Math.min(userData.initialRadius, userData.maxHeight);
                 
-                // Add organic drift (smoke moves sideways as it rises)
                 const driftLat = userData.lat + Math.sin(userData.driftAngle + time * 0.001) * userData.driftSpeed;
                 const driftLon = userData.lon + Math.cos(userData.driftAngle + time * 0.001) * userData.driftSpeed;
                 
-                // Add turbulence for organic wobble
                 const turbulenceOffset = Math.sin(time * 0.002 + cloudIndex) * userData.turbulence;
                 
-                // Recalculate position with drift and turbulence (clamped to max height)
                 const smokeRadius = userData.initialRadius + turbulenceOffset;
                 const newX = smokeRadius * Math.cos(driftLat) * Math.cos(driftLon);
                 const newZ = smokeRadius * Math.cos(driftLat) * Math.sin(driftLon);
                 const newY = smokeRadius * Math.sin(driftLat);
                 cloud.position.set(newX, newY, newZ);
                 
-                // Rotate smoke clouds for organic look
                 cloud.rotation.x += userData.rotationSpeed;
                 cloud.rotation.y += userData.rotationSpeed * 0.7;
                 
-                // Expand with non-linear growth (faster expansion as it ages)
                 const expansionFactor = 1 + Math.pow(ageProgress, 1.5) * 2.5 * userData.scaleVariation;
                 cloud.scale.set(expansionFactor, expansionFactor, expansionFactor);
                 
-                // Quick, non-linear fade with organic variation
-                // Smoke disappears much faster now (cubic falloff)
-                const fadeProgress = Math.pow(ageProgress, 2.5); // Much steeper curve
-                const organicFade = Math.sin(time * 0.004 + cloudIndex) * 0.1 + 0.9; // Subtle pulsing
+                const fadeProgress = Math.pow(ageProgress, 2.5);
+                const organicFade = Math.sin(time * 0.004 + cloudIndex) * 0.1 + 0.9;
                 cloud.material.opacity = userData.initialOpacity * (1 - fadeProgress) * organicFade;
                 
-                // Change color as smoke ages (darker to lighter gray)
                 const grayValue = Math.floor(0x66 + (0x99 - 0x66) * ageProgress);
                 cloud.material.color.setHex((grayValue << 16) | (grayValue << 8) | grayValue);
             });
         }
         
         if (fire.life > fire.maxLife) {
-            const fadeProgress = (fire.life - fire.maxLife) / 3000; // Longer fade (3 seconds)
+            const fadeProgress = (fire.life - fire.maxLife) / 3000;
             fire.marker.material.opacity *= Math.max(0, 1 - fadeProgress);
             fire.glow.material.opacity *= Math.max(0, 1 - fadeProgress);
-            // Fade smoke too (only if fire has smoke)
             if (fire.hasSmoke && fire.smokeClouds) {
                 fire.smokeClouds.forEach(cloud => {
                     cloud.material.opacity *= Math.max(0, 1 - fadeProgress);
@@ -1183,33 +974,36 @@ function animateHero() {
     });
 
     fires = fires.filter(fire => {
-        if (fire.life > fire.maxLife + 3000) { // 3 second fade period
+        if (fire.life > fire.maxLife + 3000) {
+            if (fire.marker.geometry) fire.marker.geometry.dispose();
+            if (fire.marker.material) fire.marker.material.dispose();
+            if (fire.glow.geometry) fire.glow.geometry.dispose();
+            if (fire.glow.material) fire.glow.material.dispose();
+            
             earth.remove(fire.marker);
             earth.remove(fire.glow);
-            // Clean up smoke clouds (only if fire has smoke)
             if (fire.hasSmoke && fire.smokeClouds) {
-                fire.smokeClouds.forEach(cloud => earth.remove(cloud));
+                fire.smokeClouds.forEach(cloud => {
+                    if (cloud.geometry) cloud.geometry.dispose();
+                    if (cloud.material) cloud.material.dispose();
+                    earth.remove(cloud);
+                });
             }
             return false;
         }
         return true;
     });
 
-    // Animate and manage weather clouds
     weatherClouds.forEach((cloud, index) => {
         cloud.life += 16;
         
-        // WIND SIMULATION: Move clouds across Earth's surface like real wind
-        const windGust = Math.sin(time * 0.0005 + cloud.windGustPhase) * 0.5 + 0.5; // 0-1 gust strength
+        const windGust = Math.sin(time * 0.0005 + cloud.windGustPhase) * 0.5 + 0.5;
         const turbulence = Math.sin(time * 0.0008 + index) * cloud.windTurbulence;
-        const effectiveDriftSpeed = cloud.driftSpeed * (1 + windGust * 0.5); // Speed varies with gusts
+        const effectiveDriftSpeed = cloud.driftSpeed * (1 + windGust * 0.5);
         
-        // Move cloud across Earth's surface (primarily changing longitude for westward/eastward wind)
-        // Most prevailing winds move east-west, so longitude changes more than latitude
-        const newLon = cloud.lon + effectiveDriftSpeed * 3.0; // Faster movement across surface
-        const newLat = cloud.lat + turbulence * 0.5; // Small latitude wobble from turbulence
+        const newLon = cloud.lon + effectiveDriftSpeed * 3.0;
+        const newLat = cloud.lat + turbulence * 0.5;
         
-        // Recalculate position with wind drift
         const x = cloud.radius * Math.cos(newLat) * Math.cos(newLon);
         const z = cloud.radius * Math.cos(newLat) * Math.sin(newLon);
         const y = cloud.radius * Math.sin(newLat);
@@ -1218,19 +1012,14 @@ function animateHero() {
         cloud.lon = newLon;
         cloud.lat = newLat;
         
-        // Rotate entire cloud slowly in wind direction
         cloud.mesh.rotation.y += 0.0002 * (1 + windGust * 0.3);
         
-        // WIND DEFORMATION: Stretch cloud in wind direction during gusts
-        const stretchFactor = 1 + windGust * 0.15; // Stretch up to 15% during gusts
+        const stretchFactor = 1 + windGust * 0.15;
         const stretchX = Math.cos(cloud.stretchDirection) * stretchFactor;
         const stretchZ = Math.sin(cloud.stretchDirection) * stretchFactor;
         
-        // Apply unified wind effects to entire cloud (moves as one piece)
-        // Subtle stretching in wind direction
         cloud.mesh.scale.set(stretchX, 1, stretchZ);
         
-        // Unified opacity variation for entire cloud
         const pulse = Math.sin(time * 0.001 + index * 0.5) * 0.05 + 0.95;
         const windOpacityVariation = windGust * 0.05;
         const cloudOpacity = (0.9 * pulse) - windOpacityVariation;
@@ -1239,9 +1028,8 @@ function animateHero() {
             puff.material.opacity = cloudOpacity;
         });
         
-        // Fade out at end of life
         if (cloud.life > cloud.maxLife) {
-            const fadeProgress = (cloud.life - cloud.maxLife) / 5000; // 5 second fade
+            const fadeProgress = (cloud.life - cloud.maxLife) / 5000;
             cloud.mesh.children.forEach(puff => {
                 puff.material.opacity *= Math.max(0, 1 - fadeProgress);
             });
@@ -1249,7 +1037,11 @@ function animateHero() {
     });
     
     weatherClouds = weatherClouds.filter(cloud => {
-        if (cloud.life > cloud.maxLife + 5000) { // 5 second fade period
+        if (cloud.life > cloud.maxLife + 5000) {
+            cloud.mesh.children.forEach(puff => {
+                if (puff.geometry) puff.geometry.dispose();
+                if (puff.material) puff.material.dispose();
+            });
             earth.remove(cloud.mesh);
             return false;
         }
@@ -1259,43 +1051,24 @@ function animateHero() {
     renderer.render(scene, camera);
 }
 
-// ========== COLLISION AVOIDANCE VERIFIED ==========
-// Walker Delta constellation design with CORRECT f=1 phasing ensures NO COLLISIONS:
-// • Each orbital plane separated by 18° RAAN (360°/20 planes)
-// • Satellites within each plane spaced 7.2° apart (360°/50 satellites)
-// • Adjacent planes offset by 0.36° phase shift (f × 360° / 1000 total satellites)
-//   → This subtle offset creates a ROSETTE/SPIRAL pattern
-//   → Plane 0: 0°, Plane 1: +0.36°, Plane 2: +0.72°, Plane 3: +1.08°, etc.
-// • Result: At orbital plane intersections, satellites are staggered in a spiral
-// • The 18° RAAN + 0.36° phase offset creates optimal 3D separation
-// • Minimum separation maintained through combination of RAAN and phase offsets
-// • This is the STANDARD Walker Delta formula used by GPS, Galileo, and other constellations
-
 function checkFireDetection(satellite) {
-    const detectionRadius = 6; // Satellites must be within 6 units to detect fire
-    const maxDetectionAngle = 15 * (Math.PI / 180); // 15 degrees maximum detection angle
-    const smokeInterferenceThreshold = 0.4; // Distance threshold for smoke interference
-    const cloudBlockDistance = 1.5; // Weather clouds block detection within this distance
+    const detectionRadius = 6;
+    const maxDetectionAngle = 15 * (Math.PI / 180);
+    const smokeInterferenceThreshold = 0.4;
+    const cloudBlockDistance = 1.5;
     
     fires.forEach(fire => {
         if (fire.life > fire.maxLife) return;
         
-        // Calculate distance in local coordinates (relative to Earth)
         const distance = satellite.position.distanceTo(fire.position);
         
-        // Check if within detection radius
         if (distance < detectionRadius) {
-            // Calculate angle between satellite-to-fire vector and satellite-to-Earth-center vector
-            // This ensures satellite only detects fires when looking nearly straight down
             const satToFire = new THREE.Vector3().subVectors(fire.position, satellite.position).normalize();
             const satToEarthCenter = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), satellite.position).normalize();
             
-            // Calculate angle between vectors (in radians)
             const angle = Math.acos(satToFire.dot(satToEarthCenter));
             
-            // Only detect if angle is within maximum detection angle
             if (angle <= maxDetectionAngle) {
-                // Check if weather clouds are blocking the line of sight
                 let blockedByCloud = false;
                 weatherClouds.forEach(cloud => {
                     const distanceToCloud = cloud.position.distanceTo(fire.position);
@@ -1304,37 +1077,31 @@ function checkFireDetection(satellite) {
                     }
                 });
                 
-                // Determine detection mode and line color based on smoke/cloud presence
-                let detectionMode = 'optical'; // Default: clear optical camera
-                let lineColor = 0x00ff00; // Green for optical (visible light camera)
+                let detectionMode = 'optical';
+                let lineColor = 0x00ff00;
                 let detectionType = 'Optical Camera';
                 
-                // If fire has smoke OR blocked by weather clouds, automatically use SWIR (Short-Wave Infrared)
-                // SWIR can penetrate smoke, haze, and weather clouds to detect fires underneath
                 if (fire.hasSmoke || blockedByCloud) {
                     detectionMode = 'swir';
-                    lineColor = 0xff6600; // Orange/red for SWIR (infrared sees through clouds)
+                    lineColor = 0xff6600;
                     detectionType = blockedByCloud ? 'SWIR (Through Clouds)' : 'SWIR (Through Smoke)';
                 }
                 
-                // Mark fire as detected if not already
                 if (!fire.detected) {
                     fire.detected = true;
                     console.log(`Fire detected at distance ${distance.toFixed(2)} and angle ${(angle * 180 / Math.PI).toFixed(2)}° using ${detectionType}!`);
-                    // Increase satellite glow when detecting
                     satellite.children[0].material.emissiveIntensity = 0.6;
                 }
                 
-                // Create line of sight with color based on detection mode
                 const lineGeometry = new THREE.BufferGeometry().setFromPoints([
                     satellite.position.clone(),
                     fire.position.clone()
                 ]);
                 const lineMaterial = new THREE.LineBasicMaterial({
-                    color: lineColor, // Green for optical, Orange for SWIR
+                    color: lineColor,
                     transparent: true,
-                    opacity: fire.hasSmoke ? 0.85 : 0.7, // SWIR lines slightly more opaque
-                    linewidth: fire.hasSmoke ? 3 : 2 // SWIR lines slightly thicker
+                    opacity: fire.hasSmoke ? 0.85 : 0.7,
+                    linewidth: fire.hasSmoke ? 3 : 2
                 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 earth.add(line);
@@ -1350,18 +1117,15 @@ function onHeroResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// ==================== SATELLITE 3D MODEL ====================
 let satelliteScene, satelliteCamera, satelliteRenderer, satelliteModel;
 
 function initSatellite3D() {
     const container = document.getElementById('satelliteModel');
     if (!container) return;
 
-    // Scene setup
     satelliteScene = new THREE.Scene();
     satelliteScene.background = null;
 
-    // Camera setup
     satelliteCamera = new THREE.PerspectiveCamera(
         45,
         container.offsetWidth / container.offsetHeight,
@@ -1371,7 +1135,6 @@ function initSatellite3D() {
     satelliteCamera.position.set(5, 3, 5);
     satelliteCamera.lookAt(0, 0, 0);
 
-    // Renderer setup
     satelliteRenderer = new THREE.WebGLRenderer({ 
         antialias: true,
         alpha: true 
@@ -1380,7 +1143,6 @@ function initSatellite3D() {
     satelliteRenderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(satelliteRenderer.domElement);
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     satelliteScene.add(ambientLight);
 
@@ -1392,17 +1154,13 @@ function initSatellite3D() {
     directionalLight2.position.set(-5, -3, -5);
     satelliteScene.add(directionalLight2);
 
-    // Load GLB model
     const loader = new THREE.GLTFLoader();
     loader.load(
         'assets/FinalSatPres.glb',
         function(gltf) {
             satelliteModel = gltf.scene;
-            
-            // Scale and position the model if needed
             satelliteModel.scale.set(1, 1, 1);
             satelliteModel.position.set(0, 0, 0);
-            
             satelliteScene.add(satelliteModel);
             console.log('Satellite model loaded successfully');
         },
@@ -1411,19 +1169,14 @@ function initSatellite3D() {
         },
         function(error) {
             console.error('Error loading satellite model:', error);
-            // Fallback to procedural model
             satelliteModel = createDetailedSatellite();
             satelliteScene.add(satelliteModel);
         }
     );
 
-    // Add stars background
     createSatelliteStars();
-
-    // Animation
     animateSatellite();
 
-    // Handle resize
     window.addEventListener('resize', () => {
         if (!container) return;
         satelliteCamera.aspect = container.offsetWidth / container.offsetHeight;
@@ -1435,7 +1188,6 @@ function initSatellite3D() {
 function createDetailedSatellite() {
     const group = new THREE.Group();
 
-    // Main body
     const bodyGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.8);
     const bodyMaterial = new THREE.MeshPhongMaterial({ 
         color: 0xcccccc,
@@ -1444,7 +1196,6 @@ function createDetailedSatellite() {
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     group.add(body);
 
-    // Antenna
     const antennaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8);
     const antennaMaterial = new THREE.MeshPhongMaterial({ 
         color: 0x888888,
@@ -1454,7 +1205,6 @@ function createDetailedSatellite() {
     antenna.position.set(0, 1, 0);
     group.add(antenna);
 
-    // Antenna dish
     const dishGeometry = new THREE.CylinderGeometry(0.3, 0.2, 0.1, 16);
     const dishMaterial = new THREE.MeshPhongMaterial({ 
         color: 0xaaaaaa,
@@ -1464,7 +1214,6 @@ function createDetailedSatellite() {
     dish.position.set(0, 1.6, 0);
     group.add(dish);
 
-    // Solar panels
     const panelGeometry = new THREE.BoxGeometry(2.5, 0.05, 1.2);
     const panelMaterial = new THREE.MeshPhongMaterial({ 
         color: 0x1a4d8f,
@@ -1481,7 +1230,6 @@ function createDetailedSatellite() {
     rightPanel.position.x = 2;
     group.add(rightPanel);
 
-    // Panel cells (details)
     for (let side = -1; side <= 1; side += 2) {
         for (let i = 0; i < 5; i++) {
             for (let j = 0; j < 3; j++) {
@@ -1501,7 +1249,6 @@ function createDetailedSatellite() {
         }
     }
 
-    // Thermal camera/sensor
     const sensorGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.3, 16);
     const sensorMaterial = new THREE.MeshPhongMaterial({ 
         color: 0x333333,
@@ -1514,7 +1261,6 @@ function createDetailedSatellite() {
     sensor.position.set(0, -0.4, -0.6);
     group.add(sensor);
 
-    // Sensor lens
     const lensGeometry = new THREE.CircleGeometry(0.12, 16);
     const lensMaterial = new THREE.MeshPhongMaterial({ 
         color: 0xff0000,
@@ -1573,19 +1319,17 @@ window.addEventListener('scroll', () => {
     updateActiveNavLink();
     fadeInOnScroll();
     
-    // Start simulation when user scrolls down enough to see the hero section
     if (!simulationStarted && typeof scene !== 'undefined') {
         const heroSection = document.querySelector('.hero');
         if (heroSection) {
             const rect = heroSection.getBoundingClientRect();
-            // Start when hero section is at least 30% visible
             const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
             const visiblePercent = visibleHeight / rect.height;
             
             if (visiblePercent > 0.3) {
                 simulationStarted = true;
                 console.log('3D Earth simulation started!');
-                animateHero(); // Start the animation loop
+                animateHero();
             }
         }
     }
@@ -1600,7 +1344,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initSatellite3D();
     }
     
-    // Check if hero section is already visible on load
     setTimeout(() => {
         const heroSection = document.querySelector('.hero');
         if (heroSection && !simulationStarted) {
@@ -1611,22 +1354,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (visiblePercent > 0.3) {
                 simulationStarted = true;
                 console.log('3D Earth simulation started on load!');
-                animateHero(); // Start the animation loop
+                animateHero();
             }
         }
-    }, 100); // Small delay to ensure scene is initialized
+    }, 100);
     
     const navLinks = document.querySelectorAll('.nav-menu a');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const href = link.getAttribute('href');
-            // Only prevent default for internal section links (starting with #)
             if (href && href.startsWith('#')) {
                 e.preventDefault();
                 const targetId = href.substring(1);
                 scrollToSection(targetId);
             }
-            // Let external links (like dashboard.html) navigate normally
         });
     });
-});
+});gi
