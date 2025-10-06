@@ -13,13 +13,14 @@ FLARESat is a web-based platform for satellite monitoring and data visualization
 
 ## Features
 
-- Interactive satellite visualization
-- Real-time data monitoring utilizing API calls from NASA's FIRMS comparing our idea with exisiting data.
+- Interactive 3D satellite visualization
+- Real-time data monitoring utilizing API calls from NASA's FIRMS. (We baked in Data from past 24 hours for optimization and display purposes)
 - Web-based interface
-- Dashboard portal for cust
+- Simulation of Delta Walker Constellation and their fire detection
+- Dashboard portal for customers
 
 ## Dashboard
-Speed up video of our dashboard found at 
+- 3x real speed video of our dashboard found at [https://versatilevariable.github.io/NASA_FLARE-Sat/dashboard.html](url)
 
 ![sped up 4x-output](https://github.com/user-attachments/assets/7ca1de30-0bf0-4cf2-9773-606ed8327f73)
 
@@ -58,6 +59,7 @@ FLARESat/
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+However for the documentation of the hackathon in its current state, we expect a different branch moving foward if things were to be added.
 
 ## License
 
