@@ -1,6 +1,6 @@
 # FLARESat 🛰️
 
-#Website: https://versatilevariable.github.io/FLARESat/
+#Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
 
 ## About the Project
 
