@@ -39,8 +39,10 @@ FLARESat/
 ### Prerequisites
 
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
-
-### Installation
+- Minimum of 2 gigs of avalible RAM, for best viewing use a modern browser with 8+ gigs of RAM.
+   - We reccomend enabling hardware acceleration in your browser for optimal performance.
+  
+### Local Installation
 
 1. Clone the repository:
    ```bash
