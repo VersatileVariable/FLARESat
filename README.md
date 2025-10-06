@@ -3,7 +3,9 @@
 
 ## Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
 
-<img width="400" height="400" alt="Flare Sat Detailed Logo header" src="https://github.com/user-attachments/assets/30ee1459-e2c9-44c3-abcc-f381a76372b9" />
+<img width="300" height="300" alt="Flare Sat Detailed Logo header" src="https://github.com/user-attachments/assets/30ee1459-e2c9-44c3-abcc-f381a76372b9" /> <img width="400" height="216" alt="Colorway2-Color_Black2x width-580" src="https://github.com/user-attachments/assets/605eacd9-77f1-4d36-97e6-81d020b3b6f5" />
+
+
 
 ## About the Project
 
@@ -17,9 +19,9 @@ FLARESat is a web-based platform for satellite monitoring and data visualization
 - Dashboard portal for cust
 
 ## Dashboard
-Example of Dashboard at 3x Speed.
-https://github.com/user-attachments/assets/45e1e533-a107-4f20-8100-24d55759b9a5
+Speed up video of our dashboard found at 
 
+![sped up 4x-output](https://github.com/user-attachments/assets/7ca1de30-0bf0-4cf2-9773-606ed8327f73)
 
 ## Project Structure
 
@@ -59,9 +61,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the terms found in the LICENSE file. (MIT)
 
-## Contact
-
-Project Link: [[https://github.com/VersatileVariable/FLARESat](https://github.com/VersatileVariable/FLARESat)](https://github.com/VersatileVariable/NASA_FLARE-Sat)
 
 ## Acknowledgments
 
