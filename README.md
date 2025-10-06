@@ -69,4 +69,6 @@ This project is licensed under the terms found in the LICENSE file. (MIT)
 ## Acknowledgments
 
 - NASA Apps Challenge 2025
-- [Other acknowledgments]
+- Clemson CU Hackit
+- NASA FIRMS and API
+- Clemson University Makerspace
