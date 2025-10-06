@@ -1,17 +1,24 @@
-# FLARE-Sat 
+# FLARE-Sat <img width="30" height="40" alt="logo" src="https://github.com/user-attachments/assets/c653e682-3c8d-4aa5-9794-53dd47ee668e" />
+
 
 #Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
 
 ## About the Project
 
-FLARESat is a web-based platform for satellite monitoring and data visualization. This project was developed as part of the NASA Apps Challenge 2025.
+FLARESat is a web-based platform for satellite monitoring and data visualization. This project was developed for the NASA![Uploading logo.png…]()
+ Apps Challenge 2025 for the catagory Commercializing Low Earth Orbit (LEO). The hackathon took place October 4th 2025 and lasted 48 hours. In this time we created a satellite constellation, CAD model, simulated expected data, custom lenses, and a working dashboard to compare our system against the exisiting NASA FIRMS satellites.
 
 ## Features
 
 - Interactive satellite visualization
 - Real-time data monitoring utilizing API calls from NASA's FIRMS comparing our idea with exisiting data.
 - Web-based interface
-- Documentation portal
+- Dashboard portal for cust
+
+## Dashboard
+Example of Dashboard at 3x Speed.
+https://github.com/user-attachments/assets/45e1e533-a107-4f20-8100-24d55759b9a5
+
 
 ## Project Structure
 
