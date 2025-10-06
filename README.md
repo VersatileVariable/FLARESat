@@ -1,4 +1,4 @@
-# FLARESat 🛰️
+# FLARE-Sat 
 
 #Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
 
@@ -9,7 +9,7 @@ FLARESat is a web-based platform for satellite monitoring and data visualization
 ## Features
 
 - Interactive satellite visualization
-- Real-time data monitoring
+- Real-time data monitoring utilizing API calls from NASA's FIRMS comparing our idea with exisiting data.
 - Web-based interface
 - Documentation portal
 
@@ -42,9 +42,6 @@ FLARESat/
    ```
 3. Open `index.html` in your web browser
 
-## Usage
-
-Visit our documentation at [project website] to learn more about using FLARESat.
 
 ## Contributing
 
@@ -52,11 +49,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the terms found in the LICENSE file.
+This project is licensed under the terms found in the LICENSE file. (MIT)
 
 ## Contact
 
-Project Link: [https://github.com/VersatileVariable/FLARESat](https://github.com/VersatileVariable/FLARESat)
+Project Link: [[https://github.com/VersatileVariable/FLARESat](https://github.com/VersatileVariable/FLARESat)](https://github.com/VersatileVariable/NASA_FLARE-Sat)
 
 ## Acknowledgments
 
