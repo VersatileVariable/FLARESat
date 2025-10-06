@@ -5,8 +5,7 @@
 
 ## About the Project
 
-FLARESat is a web-based platform for satellite monitoring and data visualization. This project was developed for the NASA![Uploading logo.png…]()
- Apps Challenge 2025 for the catagory Commercializing Low Earth Orbit (LEO). The hackathon took place October 4th 2025 and lasted 48 hours. In this time we created a satellite constellation, CAD model, simulated expected data, custom lenses, and a working dashboard to compare our system against the exisiting NASA FIRMS satellites.
+FLARESat is a web-based platform for satellite monitoring and data visualization. This project was developed for the NASA Space Apps Challenge 2025 for the catagory Commercializing Low Earth Orbit (LEO). The hackathon took place October 4th 2025 and lasted 48 hours. In this time we created a satellite constellation, CAD model, simulated expected data, custom lenses, and a working dashboard to compare our system against the exisiting NASA FIRMS satellites.
 
 ## Features
 
