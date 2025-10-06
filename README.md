@@ -1,7 +1,7 @@
 # FLARE-Sat <img width="30" height="40" alt="logo" src="https://github.com/user-attachments/assets/c653e682-3c8d-4aa5-9794-53dd47ee668e" />
 
 
-#Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
+## Website: https://versatilevariable.github.io/NASA_FLARE-Sat/
 
 ## About the Project
 
